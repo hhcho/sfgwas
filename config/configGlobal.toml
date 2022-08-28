@@ -1,0 +1,69 @@
+num_main_parties = 2
+hub_party_id = 1
+debug = false
+
+## Crypto parameters
+# Options: PN12QP109, PN13QP218, PN14QP438, PN15QP880, PN16QP1761
+# Defined in ckks/params.go in Lattigo library
+ckks_params = "PN14QP438"
+
+# MPC parameters
+mpc_num_threads = 4
+mpc_field_size = 256
+mpc_data_bits = 60
+mpc_frac_bits = 30
+div_sqrt_max_len = 1000000
+mpc_boolean_shares = true
+
+## Data dimensions
+num_inds = [0, 1000, 1000]
+num_snps = 100000
+num_covs = 5
+cov_all_ones = false
+
+## Input file options (supports "blocks" or "pgen")
+geno_file_format = "pgen" 
+use_precomputed_geno_count = true
+
+## Quality control parameters
+use_cached_qc = false
+skip_qc = false
+imiss_ub = 1.0  # Unused if "pgen"
+het_lb = 0.0    # Unused if "pgen"
+het_ub = 0.1    # Unused if "pgen"
+gmiss = 0.1 
+maf_lb = 0.1
+hwe_ub = 28.374
+snp_dist_thres = 100000
+
+## PCA parameters
+use_cached_pca = false
+skip_pca = false
+iter_per_eigenval = 5
+num_pcs_to_remove = 5
+num_oversampling = 10
+num_power_iters = 20
+
+## Assoc test parameters
+use_cached_combined_q = false
+pgen_batch_nsnp = 8192
+blocks_for_assoc_test = [] # tests all if empty
+
+## Networking parameters
+# Party with a smaller ID listens for connection
+# Port only needed for the listener
+
+binding_ipaddr = "0.0.0.0" # When establishing a connection, listens on all interfaces
+                           # by default; change to a specific IP address if needed
+
+[servers.party0]
+ipaddr = "127.0.0.1"
+ports  = {party1 = "8020", party2 = "8040"}  # Port numbers need to be at least mpc_num_threads apart
+
+[servers.party1]
+ipaddr = "127.0.0.1"
+ports  = {party2 = "8060"}
+
+[servers.party2]
+ipaddr = "127.0.0.1"
+ports  = {}

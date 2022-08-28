@@ -1,0 +1,24 @@
+## Shared keys
+shared_keys_path = "example_data/keys"
+
+## Data files
+geno_binary_file_prefix = "example_data/party1/geno/chr%d"
+geno_num_blocks = 22
+geno_block_size_file = "example_data/party1/chrom_sizes.txt"
+pheno_file = "example_data/party1/pheno.txt"
+covar_file = "example_data/party1/cov.txt"
+snp_position_file = "example_data/party1/snp_pos.txt"
+
+## PGEN parameters
+sample_keep_file = "example_data/party1/sample_keep.txt"  # need to work with --keep in plink2
+snp_ids_file = "example_data/party1/snp_ids.txt"          # must be unique IDs
+geno_count_file = "example_data/party1/all.gcount.transpose.bin"
+
+## Output and cache paths
+output_dir = "out/party1"
+cache_dir = "cache/party1"
+
+## Computational paramters
+local_num_threads = 8
+memory_limit = 40000000000
+assoc_num_blocks_parallel = 1  # Recommend local_num_threads divided by 4 or 8
