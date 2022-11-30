@@ -3,8 +3,8 @@
 Software for secure and federated genome-wide association studies, as described in:
 
 **Secure and Federated Genome-Wide Association Studies for Biobank-Scale Datasets**\
-Hyunghoon Cho, David Froelicher, Manaswitha Edupalli, Apostolos Pyrgelis, Juan R. Troncoso-Pastoriza, Jean-Pierre Hubaux, Bonnie Berger\
-Under review, 2022
+Hyunghoon Cho, David Froelicher, Jeffrey Chen, Manaswitha Edupalli, Apostolos Pyrgelis, Juan R. Troncoso-Pastoriza, Jean-Pierre Hubaux, Bonnie Berger\
+Submitted, 2022
 
 ## Installation
 
