@@ -9,7 +9,10 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/hhcho/sfgwas-private/gwas"
+	"github.com/hhcho/sfgwas-private/crypto"
 	"github.com/raulk/go-watchdog"
+
+	"github.com/ldsec/lattigo/v2/ckks"
 )
 
 // Expects a party ID provided as an environment variable;
@@ -20,7 +23,9 @@ var PID, PID_ERR = strconv.Atoi(os.Getenv("PID"))
 var CONFIG_PATH = "config/"
 
 func main() {
-	RunGWAS()
+	// RunGWAS()
+	playground()
+	
 }
 
 func InitProtocol(configPath string) *gwas.ProtocolInfo {
@@ -71,4 +76,26 @@ func RunGWAS() {
 	prot.GWAS()
 
 	prot.SyncAndTerminate(true)
+}
+
+func playground() {
+	precision := uint(8) // 8 and 32 seem to work well, while 16 for some reason seems to accumulate fairly large error (10^-3 ish)
+	params := crypto.NewCryptoParamsForNetwork(ckks.DefaultParams[ckks.PN13QP218], 1, precision)
+	selfParams := params[0]
+
+	size := 4
+	plaintextVector1 := make([]float64, size)
+	plaintextVector2 := make([]float64, size)
+	for i := 0; i < size; i++ {
+		plaintextVector1[i] = float64(i*i)
+		plaintextVector2[i] = float64(-i)
+	}
+	encryptedVector1, _ := crypto.EncryptFloatVector(selfParams, plaintextVector1)
+	encryptedVector2, _ := crypto.EncryptFloatVector(selfParams, plaintextVector2)
+
+	encryptedResult := crypto.CAdd(selfParams, encryptedVector1, encryptedVector2) // CAdd standing for "Ciphertext Addition"
+	// DecryptFloatVector both "Decrypts" (puts back into polynomial encoding) and "Decodes" (returns to message space)
+	// note that, perhaps slightly confusingly, we call the polynomial encoding space the "plaintexts"
+	plaintextResult := crypto.DecryptFloatVector(selfParams, encryptedResult, size)
+	fmt.Print(plaintextResult)
 }
