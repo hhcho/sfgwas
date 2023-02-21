@@ -78,10 +78,11 @@ func RunGWAS() {
 	prot.SyncAndTerminate(true)
 }
 
+// function for just playing around with the different available tools, manipulating things in ciphertext space, etc.
 func playground() {
 	precision := uint(8) // 8 and 32 seem to work well, while 16 for some reason seems to accumulate fairly large error (10^-3 ish)
 	params := crypto.NewCryptoParamsForNetwork(ckks.DefaultParams[ckks.PN13QP218], 1, precision)
-	selfParams := params[0]
+	selfParams := params[0] // the params for network suppose multiple parties, but we just need one party, so we just take the first set of params
 
 	size := 4
 	plaintextVector1 := make([]float64, size)
