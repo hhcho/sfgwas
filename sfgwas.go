@@ -84,6 +84,9 @@ func playground() {
 	params := crypto.NewCryptoParamsForNetwork(ckks.DefaultParams[ckks.PN13QP218], 1, precision)
 	selfParams := params[0] // the params for network suppose multiple parties, but we just need one party, so we just take the first set of params
 
+	// get rotation keys
+	selfParams.SetRotKeys(crypto.GenerateRotKeys(selfParams.GetSlots(), 20, true))
+
 	size := 4
 	plaintextVector1 := make([]float64, size)
 	plaintextVector2 := make([]float64, size)
@@ -93,10 +96,14 @@ func playground() {
 	}
 	encryptedVector1, _ := crypto.EncryptFloatVector(selfParams, plaintextVector1)
 	encryptedVector2, _ := crypto.EncryptFloatVector(selfParams, plaintextVector2)
+	encSum := crypto.InnerSumAll(selfParams, encryptedVector1)
+	decSum := crypto.DecryptFloat(selfParams, encSum)
+	fmt.Print(plaintextVector1)
+	fmt.Print(decSum)
 
 	encryptedResult := crypto.CAdd(selfParams, encryptedVector1, encryptedVector2) // CAdd standing for "Ciphertext Addition"
 	// DecryptFloatVector both "Decrypts" (puts back into polynomial encoding) and "Decodes" (returns to message space)
 	// note that, perhaps slightly confusingly, we call the polynomial encoding space the "plaintexts"
 	plaintextResult := crypto.DecryptFloatVector(selfParams, encryptedResult, size)
-	fmt.Print(plaintextResult)
+	fmt.Println(plaintextResult)
 }
