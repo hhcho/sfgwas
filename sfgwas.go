@@ -132,9 +132,8 @@ func playground() {
 		{-4, 0},
 		{2, -1},
 	}
-	fmt.Println(B)
 	B = transposeMatrix(B)
-	fmt.Println(B)
+	// fmt.Println(B)
 
 	// flattenedA := flattenMatrix(A)
 	// flattenedB := flattenMatrix(B)
@@ -150,11 +149,16 @@ func playground() {
 	encA := encryptMatrixByRows(selfParams, A)
 	encB := encryptMatrixByRows(selfParams, B)
 
+	// sanity check
+	// TODO this has to be decrypted a different way, now that I think of how it's encoded... this will take the first 4 elements in just the first Ciphertext (instead of 2 from each of the 2 Ciphertexts)
+	fmt.Println(decryptMatrixVectorByRows(selfParams, encA, 2))
+	fmt.Println(decryptMatrixVectorByRows(selfParams, encB, 2))
+
 	encResult := CMatrixMultiply2(selfParams, encA, encB, 2)
-	plainResult := crypto.DecryptFloatVector(selfParams, encResult, 4)
+	plainResult := decryptMatrixVectorByRows(selfParams, encResult, 2)
 	fmt.Println(plainResult)
-	matrixResult := unflattenMatrix(plainResult, 2)
-	fmt.Println(matrixResult)
+	// matrixResult := unflattenMatrix(plainResult, 2)
+	// fmt.Println(matrixResult)
 
 	// encA = crypto.RotateAndAdd(selfParams, encA, 6)
 
@@ -313,30 +317,35 @@ func CMatrixMultiply2(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int)
 		errorString := fmt.Sprintf("Expected %dx%d matrices, got %dx%d and %dx%d", n, n, len(A), n, n, len(B))
 		panic(errorString)
 	}
-
-	AB := make(crypto.CipherVector, n)
-	// just to be sure, zero out each of the entries
-	for i := 0; i < n; i++ {
-		AB[i] = crypto.Zero(cps)
-	}
 	
 	diagonals := make(crypto.CipherMatrix, n) // semantically it may make more sense to write []CipherVector
-
+	
 	for k := 0; k < n; k++ {
 		diagonal := generateDiagonal(cps, A, B, n, k)
+		fmt.Print("diagonal: ")
+		fmt.Println(decryptMatrixVectorByRows(cps, diagonal, 1))
 		diagonals[k] = diagonal
 	}
+
+	AB := make(crypto.CipherVector, n)
 	// mask the diagonals in the pertinent way to construct the correct outputs for AB
 	for i := 0; i < n; i++ {
-		// we want to populate row AB[i] with the pertinent values, which are dispersed over the diagonal vectors
+		// we want to populate row AB[i] with the pertinent values, which are dispersed over the diagonal vectors as each possible offset
+		AB[i] = crypto.Zero(cps)
 		for k := 0; k < n; k++ {
 			// for row i, the kth diagonal contributes its value at column (i + k) % n
 			offset := (i + k) % n
-			onehot := makeOneHot(cps, n, offset)
-			maskedDiagonal := crypto.Mult(cps, diagonals[i][k], onehot)
+			// maskedDiagonal := crypto.Mask(cps, diagonals[i][k], offset, false)
 
+			onehot := makeOneHot(cps, n, 0)
+			maskedDiagonal := crypto.Mult(cps, diagonals[k][i], onehot)
 			// the maskedDiagonal has the diagonal value in its 0th index, so we need to rotate it over to the correct position before continuing
 			maskedDiagonal = crypto.RotateRight(cps, maskedDiagonal, offset)
+
+			fmt.Printf("masked diagonal for i=%d, k=%d: ", i, k)
+			fmt.Print(crypto.DecryptFloatVector(cps, crypto.CipherVector{maskedDiagonal}, 2))
+			fmt.Print("\n")
+
 			AB[i] = crypto.Add(cps, AB[i], maskedDiagonal)
 			// TODO finish
 		}
@@ -401,50 +410,3 @@ func innerSumRows(cps *crypto.CryptoParams, A crypto.CipherVector, m int) crypto
 	}
 	return innerSumA
 }
-
-
-// high level algorithm idea:
-// from A : n x n and B : n x n, to compute AB: n x n
-// 1. row pack A, i.e. the ciphertext
-//      c_A  = [r1-- |r2-- |...|rn-- |...]
-//    where r_i is the ith row of A
-// 2. column pack B, i.e. the ciphertext
-//      c_B^T = [c1-- |c2-- |...|cn-- |...]
-//    where c_j is the jth column of B
-// 3. for reasons that will become clearer later, reduplicate the encoded part of c_B^T, i.e.
-//      c_B^T = [c1-- |c2-- |...|cn-- |c1-- |c2-- |...|cn-- |...]
-// 4. for i in [0..n-1]:
-//    4a. rotate c_B^T leftward by n places (so that it's rotated i*n relative to original)
-//    4b. compute d_i as the pointwise product of c_A and (shifted) c_B^T
-//    4c. some introspection will reveal that
-
-// multiplies row-encoded (n x n) matrix A with column-encoded (n x n) matrix B, returning row-encoded matrix AB
-// func cpMatrixMultiply3(cps *crypto.CryptoParams, A, B *ckks.Ciphertext, n int) *ckks.Ciphertext {
-	
-// 	crypto.RotateRight()
-
-// 	for i := 0; i < n; i++ {
-
-// 	}
-// }
-
-// takes a row-encoded matrix `A` and 
-// TODO need to think of a better name
-// func sumDotProducts(cps *crypto.CryptoParams, A *ckks.Ciphertext, n, k int) *ckks.Ciphertext {
-// 	// my first implementation of this will be the extremely non-optimized version where you just iteratively add each position together, accumulating the values into one slot
-
-
-// 	// one silver lining of doing it this way is that it lets us put the result just into the correct offset position quite easily
-// 	// of course, if we had done it properly via binary merge, then 
-
-
-// 	// small optimization to be made: if we also pass in the "offset" k, then we could possibly
-// 	// also determine which position
-// }
-
-// masks the given row-encoded matrix `A` and
-// TODO think of better name
-// func maskDotProducts(cps *crypto.CryptoParams, A *ckks.Ciphertext, n, k int) *ckks.Ciphertext {
-	
-// }
-
