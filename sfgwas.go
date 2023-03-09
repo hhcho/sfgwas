@@ -192,6 +192,16 @@ func encryptMatrixByRows(cps *crypto.CryptoParams, A [][]float64) crypto.CipherV
 	return result
 }
 
+// decrypts a CipherVector interpreted as a series of stacked rows, each row represented with a single Ciphertext containing `n` elements
+func decryptMatrixVectorByRows(cps *crypto.CryptoParams, A crypto.CipherVector, n int) [][]float64 {
+	result := make([][]float64, 0)
+	for i := 0; i < len(A); i++ {
+		row := crypto.DecryptFloatVector(cps, crypto.CipherVector{A[i]}, n)
+		result = append(result, row)
+	}
+	return result
+}
+
 // computes and returns a Ciphertext with the value of the sum of the first n slots in a given ciphertext
 // TODO alternatively you can actually call crypto.RotateAndAdd, repackage its output to be a CipherVector and decrypt it as a Float Vector to look at the slots beyond the first
 // by construction of the algorithm, the ith slot in the Ciphertext output of RotateAndAdd is the sum excluding terms 0 through i, so it's possible to recover the partial sums of the first few terms this way
