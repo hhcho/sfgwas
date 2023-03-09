@@ -133,57 +133,20 @@ func playground() {
 		{2, -1},
 	}
 	B = transposeMatrix(B)
-	// fmt.Println(B)
-
-	// flattenedA := flattenMatrix(A)
-	// flattenedB := flattenMatrix(B)
-
-	// fmt.Println(flattenedA)
-	// fmt.Println(flattenedB)
-
-	// encA, _ := crypto.EncryptFloatVector(selfParams, flattenedA)
-	// fmt.Printf("encrypted %d elements\n", i)
-	// fmt.Println(len(encA))
-	// encB, _ := crypto.EncryptFloatVector(selfParams, flattenedB)
 
 	encA := encryptMatrixByRows(selfParams, A)
 	encB := encryptMatrixByRows(selfParams, B)
 
 	// sanity check
-	// TODO this has to be decrypted a different way, now that I think of how it's encoded... this will take the first 4 elements in just the first Ciphertext (instead of 2 from each of the 2 Ciphertexts)
 	fmt.Println(decryptMatrixVectorByRows(selfParams, encA, 2))
 	fmt.Println(decryptMatrixVectorByRows(selfParams, encB, 2))
 
-	encResult := CMatrixMultiply2(selfParams, encA, encB, 2)
+	encResult := CMatrixMultiply(selfParams, encA, encB, 2)
 	plainResult := decryptMatrixVectorByRows(selfParams, encResult, 2)
 	fmt.Println(plainResult)
-	// matrixResult := unflattenMatrix(plainResult, 2)
-	// fmt.Println(matrixResult)
-
-	// encA = crypto.RotateAndAdd(selfParams, encA, 6)
-
-	// doubleA := crypto.CipherVector{encA[0], encA[0]}
-	// doubleASquared := crypto.CMult(selfParams, doubleA, doubleA)
-	// fmt.Println(crypto.DecryptFloatVector(selfParams, doubleASquared, 12))
-
-	// tmp2 := crypto.MaskTrunc(selfParams, encA[0], 3)
-
-	// tmp := crypto.CMult(selfParams, encA, crypto.CipherVector{tmp2})
-	// fmt.Println(crypto.DecryptFloatVector(selfParams, tmp, 6))
-
-
-	// decA := crypto.DecryptFloatVector(selfParams, crypto.CipherVector{encA[0]}, 6)
-	// fmt.Println(decA)
-
-	// fmt.Println(crypto.DecryptFloatVector(selfParams,
-	// 	crypto.CipherVector{crypto.RotateAndAdd(selfParams, encA[0], 6)},
-	// 	8))
 
 	// crucially the granularity on RotateAndAdd is powers of 2: that is to say, you can only request that it sum the indices 0 through 2^k. Any upper index greater than 2^k returns the same value as 2^k+1. (Up to minor fluctuations induced by the "empty" slots having extremely small values in them.) Check the algorithm for RotateAndAdd for details.
 	// the upshot is that if you want to say sum just the first n indices of a vector, then you should mask the vector first (with MaskTrunc)
-	
-	// decUniqueA := crypto.DecryptFloat(selfParams, encA[0])
-	// fmt.Println(decUniqueA)
 
 }
 
@@ -311,7 +274,9 @@ func encryptMatrixAsVector(cps *crypto.CryptoParams, A [][]float64) crypto.Ciphe
 }
 
 // given two n x n matrices A and B, computes their matrix product AB, assuming that A is row-encoded (each row is its own *ckks.Ciphertext) and B is column-encoded (each column is its own *ckks.Ciphertext)
-func CMatrixMultiply2(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int) crypto.CipherVector {
+// TODO generalize to non-square matrices. Diagonal helper function will be a little harder to think about but should work still.
+// worst comes to worst, you can always snap to the largest common square value and zero out the other entries
+func CMatrixMultiply(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int) crypto.CipherVector {
 	// ensure the matrices really are n x n
 	if n != len(A) || n != len(B) {
 		errorString := fmt.Sprintf("Expected %dx%d matrices, got %dx%d and %dx%d", n, n, len(A), n, n, len(B))
@@ -335,11 +300,9 @@ func CMatrixMultiply2(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int)
 		for k := 0; k < n; k++ {
 			// for row i, the kth diagonal contributes its value at column (i + k) % n
 			offset := (i + k) % n
-			// maskedDiagonal := crypto.Mask(cps, diagonals[i][k], offset, false)
-
-			onehot := makeOneHot(cps, n, 0)
-			maskedDiagonal := crypto.Mult(cps, diagonals[k][i], onehot)
+			maskedDiagonal := crypto.Mask(cps, diagonals[k][i], 0, false)
 			// the maskedDiagonal has the diagonal value in its 0th index, so we need to rotate it over to the correct position before continuing
+			// TODO maybe semantically we should do it in the other order? we can rotate over _then_ mask?
 			maskedDiagonal = crypto.RotateRight(cps, maskedDiagonal, offset)
 
 			fmt.Printf("masked diagonal for i=%d, k=%d: ", i, k)
@@ -347,7 +310,6 @@ func CMatrixMultiply2(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int)
 			fmt.Print("\n")
 
 			AB[i] = crypto.Add(cps, AB[i], maskedDiagonal)
-			// TODO finish
 		}
 	}
 
@@ -375,19 +337,6 @@ func generateDiagonal(cps *crypto.CryptoParams, A, B crypto.CipherVector, n, k i
 	}
 	return result
 }
-
-// creates a Ciphertext representing the encryption of the length-n one hot vector with a single 1 at index k
-func makeOneHot(cps *crypto.CryptoParams, n, k int) *ckks.Ciphertext {
-	vector := make([]float64, n)
-	vector[k] = 1
-	result, _ := crypto.EncryptFloatVector(cps, vector)
-	return result[0]
-}
-
-// computes and returns the 
-// func maskDiagonal(cps *crypto.CryptoParams, A crypto.CipherVector, n, k int) crypto.CipherVector {
-
-// }
 
 // create and return a new CipherVector whose entries are the entries of `A` cycled by `k`. (I deliberately use the word "cycle" to avoid "rotate")
 // for example, cycling a matrix with rows r1, r2, r3, r4 by 3 returns the matrix with rows r4, r1, r2, r3
