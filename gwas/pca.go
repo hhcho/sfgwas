@@ -181,18 +181,39 @@ func (pca *PCA) DistributedPCA() crypto.CipherMatrix {
 		}
 
 		invN := 1.0 / float64(totInd)
-		sx.MulScalar(rtype.FromFloat64(invN, 2*fracBits))
-		sx2.MulScalar(rtype.FromFloat64(invN, 2*fracBits))
-
+		if fracBits <= 30 {
+			sx.MulScalar(rtype.FromFloat64(invN, 2*fracBits))
+			sx2.MulScalar(rtype.FromFloat64(invN, 2*fracBits))
+		} else {
+			sx.MulScalar(rtype.FromFloat64(invN, fracBits))
+			sx2.MulScalar(rtype.FromFloat64(invN, fracBits))
+		}
 	}
 
-	XMeanSS := mpcObj.TruncVec(sx, dataBits, fracBits)
+	var XMeanSS mpc_core.RVec
+	if fracBits <= 30 {
+		XMeanSS = mpcObj.TruncVec(sx, dataBits, fracBits)
+	} else {
+		XMeanSS = sx.Copy()
+	}
 
 	XMeanSq := mpcPar.SSSquareElemVec(XMeanSS) // E[X]^2
 
-	sx2.Sub(XMeanSq) // E[X^2] - E[X]^2
+	var XVarSS mpc_core.RVec // E[X^2] - E[X]^2
+	if fracBits <= 30 {
+		sx2.Sub(XMeanSq) // E[X^2] - E[X]^2
+		XVarSS = mpcObj.TruncVec(sx2, dataBits, fracBits)
+	} else {
+		XMeanSq = mpcObj.TruncVec(XMeanSq, dataBits, fracBits)
+		sx2.Sub(XMeanSq)
+		XVarSS = sx2.Copy()
+	}
 
-	XVarSS := mpcObj.TruncVec(sx2, dataBits, fracBits)
+	// If variance is near zero, replace with 1 to avoid overflow
+	zeroThres := rtype.FromFloat64(1e-8, fracBits)
+	zeroFilt := mpcObj.FlipBit(mpcPar.NotLessThanPublic(XVarSS, zeroThres, binaryVersion))
+	zeroFilt.MulScalar(rtype.FromFloat64(1.0, fracBits))
+	XVarSS.Add(zeroFilt)
 
 	log.LLvl1(time.Now().Format(time.RFC3339), "Computing stdev ... m =", len(XVarSS))
 
