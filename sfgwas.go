@@ -103,6 +103,12 @@ func playground() {
 	// 	{4, -1},
 	// 	{6, 5},
 	// }
+	I := [][]float64{
+		{1, 0, 0, 0},
+		{0, 1, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
+	}
 	A := [][]float64{
 		{24, 19, 5, 18},
 		{22, 34, 9, -23},
@@ -120,6 +126,7 @@ func playground() {
 
 	encA := encryptMatrixByRows(selfParams, A)
 	encB := encryptMatrixByRows(selfParams, B)
+	encI := encryptMatrixByRows(selfParams, I)
 
 	// sanity check
 	fmt.Println(decryptMatrixVectorByRows(selfParams, encA, n))
@@ -128,6 +135,8 @@ func playground() {
 	encResult := CMatrixMultiply(selfParams, encA, encB, n)
 	plainResult := decryptMatrixVectorByRows(selfParams, encResult, n)
 	fmt.Println(plainResult)
+	fmt.Println(decryptMatrixVectorByRows(selfParams, CMatrixMultiply(selfParams, encA, encI, n), n))
+	fmt.Println(decryptMatrixVectorByRows(selfParams, CMatrixMultiply(selfParams, encI, encB, n), n))
 
 	// crucially the granularity on RotateAndAdd is powers of 2: that is to say, you can only request that it sum the indices 0 through 2^k. Any upper index greater than 2^k returns the same value as 2^k+1. (Up to minor fluctuations induced by the "empty" slots having extremely small values in them.) Check the algorithm for RotateAndAdd for details.
 	// the upshot is that if you want to say sum just the first n indices of a vector, then you should mask the vector first (with MaskTrunc)
@@ -200,6 +209,7 @@ func transposeMatrix(A [][]float64) [][]float64 {
 // given two n x n matrices A and B, computes their matrix product AB, assuming that A is row-encoded (each row is its own *ckks.Ciphertext) and B is column-encoded (each column is its own *ckks.Ciphertext)
 // TODO generalize to non-square matrices. Diagonal helper function will be a little harder to think about but should work still.
 // worst comes to worst, you can always snap to the largest common square value and zero out the other entries
+// TODO use CipherMatrices instead of CipherVectors to let the rows be of arbitrary width
 func CMatrixMultiply(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int) crypto.CipherVector {
 	// ensure the matrices really are n x n
 	if n != len(A) || n != len(B) {
