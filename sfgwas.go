@@ -87,27 +87,6 @@ func playground() {
 	// get rotation keys
 	selfParams.SetRotKeys(crypto.GenerateRotKeys(selfParams.GetSlots(), 20, true))
 
-	// size := 4
-	// plaintextVector1 := make([]float64, size)
-	// plaintextVector2 := make([]float64, size)
-	// for i := 0; i < size; i++ {
-	// 	plaintextVector1[i] = float64(i*i)
-	// 	plaintextVector2[i] = float64(-i)
-	// }
-	// fmt.Println(plaintextVector1)
-	// fmt.Println(plaintextVector2)
-	// encryptedVector1, _ := crypto.EncryptFloatVector(selfParams, plaintextVector1)
-	// encryptedVector2, _ := crypto.EncryptFloatVector(selfParams, plaintextVector2)
-	// encSum := crypto.InnerSumAll(selfParams, encryptedVector1)
-	// decSum := crypto.DecryptFloat(selfParams, encSum)
-	// fmt.Println(decSum)
-
-	// encryptedResult := crypto.CAdd(selfParams, encryptedVector1, encryptedVector2) // CAdd standing for "Ciphertext Addition"
-	// DecryptFloatVector both "Decrypts" (puts back into polynomial encoding) and "Decodes" (returns to message space)
-	// note that, perhaps slightly confusingly, we call the polynomial encoding space the "plaintexts"
-	// plaintextResult := crypto.DecryptFloatVector(selfParams, encryptedResult, size)
-	// fmt.Println(plaintextResult)
-
 	// multiply the matrices
 	// 1 2 5      -2  0
 	// 3 4 6       4 -1
@@ -125,24 +104,29 @@ func playground() {
 	// 	{6, 5},
 	// }
 	A := [][]float64{
-		{1, 2},
-		{2, 4},
+		{24, 19, 5, 18},
+		{22, 34, 9, -23},
+		{8, 0, -8, 0},
+		{0, -4, -18, 14},
 	}
 	B := [][]float64{
-		{-4, 0},
-		{2, -1},
+		{3, -4, 23, 10},
+		{2, -1, -8, 0},
+		{-5, 0, 4, -2},
+		{5, -9, 1, 3},
 	}
 	B = transposeMatrix(B)
+	n := len(B)
 
 	encA := encryptMatrixByRows(selfParams, A)
 	encB := encryptMatrixByRows(selfParams, B)
 
 	// sanity check
-	fmt.Println(decryptMatrixVectorByRows(selfParams, encA, 2))
-	fmt.Println(decryptMatrixVectorByRows(selfParams, encB, 2))
+	fmt.Println(decryptMatrixVectorByRows(selfParams, encA, n))
+	fmt.Println(decryptMatrixVectorByRows(selfParams, encB, n))
 
-	encResult := CMatrixMultiply(selfParams, encA, encB, 2)
-	plainResult := decryptMatrixVectorByRows(selfParams, encResult, 2)
+	encResult := CMatrixMultiply(selfParams, encA, encB, n)
+	plainResult := decryptMatrixVectorByRows(selfParams, encResult, n)
 	fmt.Println(plainResult)
 
 	// crucially the granularity on RotateAndAdd is powers of 2: that is to say, you can only request that it sum the indices 0 through 2^k. Any upper index greater than 2^k returns the same value as 2^k+1. (Up to minor fluctuations induced by the "empty" slots having extremely small values in them.) Check the algorithm for RotateAndAdd for details.
@@ -167,13 +151,6 @@ func decryptMatrixVectorByRows(cps *crypto.CryptoParams, A crypto.CipherVector, 
 		result = append(result, row)
 	}
 	return result
-}
-
-// computes and returns a Ciphertext with the value of the sum of the first n slots in a given ciphertext
-// TODO alternatively you can actually call crypto.RotateAndAdd, repackage its output to be a CipherVector and decrypt it as a Float Vector to look at the slots beyond the first
-// by construction of the algorithm, the ith slot in the Ciphertext output of RotateAndAdd is the sum excluding terms 0 through i, so it's possible to recover the partial sums of the first few terms this way
-func truncatedRotateAndAdd(cps *crypto.CryptoParams, ct *ckks.Ciphertext, n int) *ckks.Ciphertext {
-	return crypto.RotateAndAdd(cps, crypto.MaskTrunc(cps, ct, n), n)
 }
 
 // flatten an n x m matrix A and return it as a single slice (of length n*m)
@@ -220,59 +197,6 @@ func transposeMatrix(A [][]float64) [][]float64 {
 	return transpose
 }
 
-// multiply encrypted matrix A : n x k with plaintext matrix B: k x m
-func cpMatrixMultiply(params *crypto.CryptoParams, A crypto.CipherMatrix, B [][]float64) crypto.CipherMatrix {
-	n := len(A)
-	k, m := len(B), len(B[0])
-	
-	// first, we collect Plaintext encodings of the columns of B
-	plaintextCols := make(crypto.PlainMatrix, m)
-	for j := 0; j < m; j++ {
-		col := make([]float64, k)
-		for i := 0; i < k; i++ {
-			col[i] = B[i][j]
-		}
-		// fmt.Print("col is ", col, "\n")
-		plainCol, _ := crypto.EncodeFloatVector(params, col);
-		plaintextCols[j] = plainCol
-	}
-	
-	// now use the columns of B to compute the result
-	result := make(crypto.CipherMatrix, n)
-	for i := 0; i < n; i++ {
-		row := make(crypto.CipherVector, m)
-		for j := 0; j < m; j++ {
-			prod := crypto.CPMult(params, A[i], plaintextCols[j])
-			entry := crypto.InnerSum(params, prod, k)
-			row[j] = entry.CopyNew().Ciphertext()
-
-			fmt.Printf("\njust did entry %d,%d\n", i, j)
-			fmt.Print("which multiplied ", crypto.DecryptFloatVector(params, A[i], k), " into ", crypto.DecodeFloatVector(params, plaintextCols[j])[:k],"\n")
-			fmt.Print("entry is ", crypto.DecryptFloat(params, row[j]), "\n")
-		}
-		fmt.Print("row ", i, " is ", crypto.DecryptFloatVector(params, row, 1), "\n")
-		// fmt.Print("entry is ", crypto.DecryptFloat(params, row[1]))
-		result[i] = row
-	}
-	fmt.Print("result is ", crypto.DecryptFloatMatrix(params, result, m), "\n")
-	return result
-}
-
-func encryptMatrixAsVector(cps *crypto.CryptoParams, A [][]float64) crypto.CipherVector {
-	n := len(A)
-	output := make(crypto.CipherVector, n)
-	for i := 0; i < n; i++ {
-		enc, _ := crypto.EncryptFloatVector(cps, A[i])
-		if len(enc) > 1 {
-			// in other words, that we had to pack multiple Ciphertexts
-			panic("Encrypted matrix has rows too wide to store in individual Ciphertexts")
-		}
-		// otherwise we know that there is just one Ciphertext in `enc`, which therefore contains all the values
-		output[i] = enc[0]
-	}
-	return output
-}
-
 // given two n x n matrices A and B, computes their matrix product AB, assuming that A is row-encoded (each row is its own *ckks.Ciphertext) and B is column-encoded (each column is its own *ckks.Ciphertext)
 // TODO generalize to non-square matrices. Diagonal helper function will be a little harder to think about but should work still.
 // worst comes to worst, you can always snap to the largest common square value and zero out the other entries
@@ -287,8 +211,8 @@ func CMatrixMultiply(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int) 
 	
 	for k := 0; k < n; k++ {
 		diagonal := generateDiagonal(cps, A, B, n, k)
-		fmt.Print("diagonal: ")
-		fmt.Println(decryptMatrixVectorByRows(cps, diagonal, 1))
+		// fmt.Print("diagonal: ")
+		// fmt.Println(decryptMatrixVectorByRows(cps, diagonal, 1))
 		diagonals[k] = diagonal
 	}
 
@@ -305,9 +229,9 @@ func CMatrixMultiply(cps *crypto.CryptoParams, A, B crypto.CipherVector, n int) 
 			// TODO maybe semantically we should do it in the other order? we can rotate over _then_ mask?
 			maskedDiagonal = crypto.RotateRight(cps, maskedDiagonal, offset)
 
-			fmt.Printf("masked diagonal for i=%d, k=%d: ", i, k)
-			fmt.Print(crypto.DecryptFloatVector(cps, crypto.CipherVector{maskedDiagonal}, 2))
-			fmt.Print("\n")
+			// fmt.Printf("masked diagonal for i=%d, k=%d: ", i, k)
+			// fmt.Print(crypto.DecryptFloatVector(cps, crypto.CipherVector{maskedDiagonal}, 2))
+			// fmt.Print("\n")
 
 			AB[i] = crypto.Add(cps, AB[i], maskedDiagonal)
 		}
@@ -336,26 +260,4 @@ func generateDiagonal(cps *crypto.CryptoParams, A, B crypto.CipherVector, n, k i
 		result[i] = crypto.RotateAndAdd(cps, product, n)
 	}
 	return result
-}
-
-// create and return a new CipherVector whose entries are the entries of `A` cycled by `k`. (I deliberately use the word "cycle" to avoid "rotate")
-// for example, cycling a matrix with rows r1, r2, r3, r4 by 3 returns the matrix with rows r4, r1, r2, r3
-func cycleRows(A crypto.CipherVector, k int) crypto.CipherVector {
-	n := len(A)
-	cycledA := make(crypto.CipherVector, n)
-	for i := 0; i < n; i++ {
-		offsetRow := (i + k) % n
-		cycledA[i] = A[offsetRow].CopyNew().Ciphertext()
-	}
-	return cycledA
-}
-
-// given CipherVector `A` representing an array of length-m vectors, create and return a new CipherVector whose entries represent, for each vector in `A`, the summation of the m entries of that vector
-func innerSumRows(cps *crypto.CryptoParams, A crypto.CipherVector, m int) crypto.CipherVector {
-	n := len(A)
-	innerSumA := make(crypto.CipherVector, n)
-	for i := 0; i < n; i++ {
-		innerSumA[i] = crypto.RotateAndAdd(cps, A[i], m)
-	}
-	return innerSumA
 }
