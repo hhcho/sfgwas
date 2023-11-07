@@ -3,6 +3,7 @@ package crypto
 import (
 	"math"
 	"math/cmplx"
+	"sync"
 	"time"
 
 	"github.com/ldsec/lattigo/v2/ckks"
@@ -32,6 +33,29 @@ func EncryptDense(cryptoParams *CryptoParams, vals *mat.Dense) CipherMatrix {
 		valsC := mat.Col(tmp, i, vals)
 		valsEnc[i], _ = EncryptFloatVector(cryptoParams, valsC)
 	}
+	return valsEnc
+}
+
+func EncryptDenseParallel(cryptoParams *CryptoParams, vals *mat.Dense, numThreads int) CipherMatrix {
+	//col encoded
+	r, c := vals.Dims()
+	valsEnc := make(CipherMatrix, c)
+
+	wg := sync.WaitGroup{}
+	vparallelize := int(math.Ceil(float64(c) / float64(numThreads)))
+	for i := 0; i < c; i = i + vparallelize {
+		wg.Add(1)
+		go func(iT int) {
+			defer wg.Done()
+			for k := 0; k < vparallelize && (k+iT < c); k++ {
+				//for i := 0; i < c; i++ {
+				tmp := make([]float64, r)
+				valsC := mat.Col(tmp, k+iT, vals)
+				valsEnc[k+iT], _ = EncryptFloatVector(cryptoParams, valsC)
+			}
+		}(i)
+	}
+	wg.Wait()
 	return valsEnc
 }
 
@@ -562,6 +586,18 @@ func CAdd(cryptoParams *CryptoParams, X CipherVector, Y CipherVector) CipherVect
 	return res
 }
 
+func CConjugate(cryptoParams *CryptoParams, X CipherVector) CipherVector {
+	res := make(CipherVector, len(X)) //equal num of ciphertexts
+	cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		for i := 0; i < len(X); i++ {
+			//check level
+			res[i] = eval.ConjugateNew(X[i])
+		}
+		return nil
+	})
+	return res
+}
+
 func CSub(cryptoParams *CryptoParams, X CipherVector, Y CipherVector) CipherVector {
 	res := make(CipherVector, len(X))
 	cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
@@ -630,6 +666,21 @@ func CRescale(cryptoParams *CryptoParams, X CipherVector) CipherVector {
 	err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
 		for i := range X {
 			eval.Rescale(X[i], cryptoParams.Params.Scale(), X[i])
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return X
+}
+
+func CMatRescale(cryptoParams *CryptoParams, X CipherMatrix) CipherMatrix {
+	err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		for j := range X {
+			for i := range X[j] {
+				eval.Rescale(X[j][i], cryptoParams.Params.Scale(), X[j][i])
+			}
 		}
 		return nil
 	})
@@ -760,6 +811,23 @@ func DropLevel(cryptoParams *CryptoParams, A CipherMatrix, outLevel int) CipherM
 				return nil
 			})
 		}
+	}
+	return out
+}
+
+func DropLevelVec(cryptoParams *CryptoParams, A CipherVector, outLevel int) CipherVector {
+	out := make(CipherVector, len(A))
+	for i := range out {
+		cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+			if A[i].Level() > outLevel {
+				out[i] = eval.DropLevelNew(A[i], A[i].Level()-outLevel)
+			} else if A[i].Level() == outLevel {
+				out[i] = A[i].CopyNew().Ciphertext()
+			} else {
+				log.Fatalf("DropLevel: requested level", outLevel, "when input is", A[i].Level())
+			}
+			return nil
+		})
 	}
 	return out
 }

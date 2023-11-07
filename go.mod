@@ -1,4 +1,4 @@
-module github.com/hhcho/sfgwas-private
+module github.com/hhcho/sfgwas
 
 go 1.18
 
@@ -42,5 +42,6 @@ require (
 	rsc.io/goversion v1.2.0 // indirect
 )
 
-replace github.com/ldsec/lattigo/v2 => ../lattigo
-replace github.com/hhcho/mpc-core => ../mpc-core
+replace github.com/ldsec/lattigo/v2 => github.com/hcholab/lattigo/v2 v2.1.2-0.20230123224332-e8d68c24b94a
+
+replace github.com/hhcho/mpc-core => github.com/hhcho/mpc-core v0.0.0-20220828210829-24cf7abd1073

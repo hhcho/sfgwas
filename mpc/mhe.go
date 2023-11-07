@@ -8,7 +8,7 @@ import (
 
 	"github.com/aead/chacha20/chacha"
 	"github.com/hhcho/frand"
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/dckks"
 	"github.com/ldsec/lattigo/v2/ring"
 	"github.com/ldsec/lattigo/v2/utils"
@@ -100,7 +100,7 @@ func (netObj *Network) CollectivePubKeyGen(parameters *ckks.Parameters, skShard 
 	return
 }
 
-func (netObj *Network) CollectiveDecryptMat(cps *crypto.CryptoParams, cm crypto.CipherMatrix, sourcePid int) (pm crypto.PlainMatrix) {
+func (netObj *Network) CollectiveDecryptMat(cps *crypto.CryptoParams, cm crypto.CipherMatrix, sourcePid int) (pm crypto.PlainMatrix, err error) {
 	pid := netObj.GetPid()
 	if pid == 0 {
 		return
@@ -119,7 +119,10 @@ func (netObj *Network) CollectiveDecryptMat(cps *crypto.CryptoParams, cm crypto.
 				}
 			}
 		} else {
-			nr = netObj.ReceiveInt(sourcePid)
+			nr, err = netObj.ReceiveIntWithErr(sourcePid)
+			if err != nil {
+				return nil, err
+			}
 			nc = netObj.ReceiveInt(sourcePid)
 			cm = make(crypto.CipherMatrix, nr)
 			cm[0] = make(crypto.CipherVector, nc)
@@ -173,7 +176,20 @@ func (netObj *Network) CollectiveDecryptVec(cps *crypto.CryptoParams, cv crypto.
 	if netObj.GetPid() == 0 {
 		return
 	}
-	return netObj.CollectiveDecryptMat(cps, crypto.CipherMatrix{cv}, sourcePid)[0]
+
+	mat, _ := netObj.CollectiveDecryptMat(cps, crypto.CipherMatrix{cv}, sourcePid)
+	return mat[0]
+}
+
+func (netObj *Network) CollectiveDecryptVecWithErr(cps *crypto.CryptoParams, cv crypto.CipherVector, sourcePid int) (pv crypto.PlainVector, err error) {
+	if netObj.GetPid() == 0 {
+		return
+	}
+	mat, err := netObj.CollectiveDecryptMat(cps, crypto.CipherMatrix{cv}, sourcePid)
+	if err != nil {
+		return nil, err
+	}
+	return mat[0], err
 }
 
 func (netObj *Network) CollectiveDecrypt(cps *crypto.CryptoParams, ct *ckks.Ciphertext, sourcePid int) (pt *ckks.Plaintext) {
@@ -254,6 +270,51 @@ func (netObj *Network) CollectiveBootstrap(cps *crypto.CryptoParams, ct *ckks.Ci
 	refProtocol.Recrypt(ct, crp, refAgg2)      // Masked re-encryption
 
 	return
+}
+
+func (netObj *Network) CollectiveBootstrapWithErr(cps *crypto.CryptoParams, ct *ckks.Ciphertext, sourcePid int) error {
+	// sourcePid broadcasts ct to other parties for collective decryption
+	if netObj.GetPid() == 0 {
+		return nil
+	}
+	var err error
+
+	// if sourcePid <= 0, assume cm is already shared across parties
+	if sourcePid > 0 {
+		if netObj.GetPid() == sourcePid {
+			for p := 1; p < netObj.GetNParty(); p++ {
+				if p != sourcePid {
+					netObj.SendCiphertext(ct, p)
+				}
+			}
+		} else {
+			ct, err = netObj.ReceiveCiphertextWithErr(cps, sourcePid)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	parameters := cps.Params
+	skShard := cps.Sk.Value
+	crpGen := netObj.GetCRPGen()
+	levelStart := ct.Level()
+
+	refProtocol := dckks.NewRefreshProtocol(parameters)
+	refShare1, refShare2 := refProtocol.AllocateShares(levelStart)
+
+	crp := crpGen.ReadNew()
+
+	refProtocol.GenShares(skShard, levelStart, netObj.GetNParty()-1, ct, parameters.Scale(), crp, refShare1, refShare2)
+
+	refAgg1 := netObj.AggregateRefreshShare(refShare1, levelStart)
+	refAgg2 := netObj.AggregateRefreshShare(refShare2, parameters.MaxLevel())
+
+	refProtocol.Decrypt(ct, refAgg1)           // Masked decryption
+	refProtocol.Recode(ct, parameters.Scale()) // Masked re-encoding
+	refProtocol.Recrypt(ct, crp, refAgg2)      // Masked re-encryption
+
+	return nil
 }
 
 func (netObj *Network) CollectiveBootstrapVec(cps *crypto.CryptoParams, cv crypto.CipherVector, sourcePid int) crypto.CipherVector {

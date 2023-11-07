@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	mpc_core "github.com/hhcho/mpc-core"
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/ring"
 
 	"github.com/ldsec/lattigo/v2/ckks"
@@ -111,6 +111,24 @@ func (netObj *Network) SendAllCryptoParams(cps *crypto.CryptoParams) {
 	}
 }
 
+func (netObj *Network) SendCipherMatrixMarshalled(sbytes, cmbytes []byte, to int) {
+	conn := netObj.conns[to]
+
+	//sbytes, cmbytes := MarshalCM(m)
+
+	sbuf := make([]byte, 8) //TODO: see if 4 bytes is enough
+	cmbuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(sbuf, uint64(len(sbytes)))
+	binary.LittleEndian.PutUint64(cmbuf, uint64(len(cmbytes)))
+
+	WriteFull(&conn, sbuf)
+	WriteFull(&conn, sbytes)
+	WriteFull(&conn, cmbuf)
+	WriteFull(&conn, cmbytes)
+
+	netObj.UpdateSenderLog(to, len(sbytes)+len(cmbytes))
+}
+
 //SendAllCiphertext sends ciphertext over to all parties
 func (netObj *Network) SendAllCiphertext(ct *ckks.Ciphertext, includeZero bool) {
 	for i := 0; i < netObj.NumParties; i++ {
@@ -214,6 +232,18 @@ func (netObj *Network) ReceiveInt(from int) int {
 	return val
 }
 
+func (netObj *Network) ReceiveIntWithErr(from int) (int, error) {
+	conn := netObj.conns[from]
+
+	buf := make([]byte, 8)
+	err := ReadFullWithErr(&conn, buf)
+	val := int(binary.LittleEndian.Uint64(buf))
+
+	netObj.UpdateReceiverLog(from, len(buf))
+
+	return val, err
+}
+
 //ReceiveCipherVector reads bytes sent over conn, and unmarshals it as a ciphervector
 func (netObj *Network) ReceiveIntVector(nElem, from int) []uint64 {
 	conn := netObj.conns[from]
@@ -247,6 +277,27 @@ func (netObj *Network) ReceiveCiphertext(cryptoParams *crypto.CryptoParams, from
 
 	netObj.UpdateReceiverLog(from, len(buf)+len(data))
 	return ct
+}
+
+// // ReceiveCiphertext reads bytes sent over conn, and unmarshals it as a ciphertext
+func (netObj *Network) ReceiveCiphertextWithErr(cryptoParams *crypto.CryptoParams, from int) (*ckks.Ciphertext, error) {
+	conn := netObj.conns[from]
+
+	buf := make([]byte, 8)
+	err := ReadFullWithErr(&conn, buf)
+	if err != nil {
+		return nil, err
+	}
+	sbyteSize := binary.LittleEndian.Uint64(buf)
+	data := make([]byte, sbyteSize)
+	ReadFull(&conn, data)
+
+	ct := ckks.NewCiphertext(cryptoParams.Params, 1, cryptoParams.Params.MaxLevel(), cryptoParams.Params.Scale())
+	e := ct.UnmarshalBinary(data)
+	checkError(e)
+
+	netObj.UpdateReceiverLog(from, len(buf)+len(data))
+	return ct, nil
 }
 
 //ReceiveCipherVector reads bytes sent over conn, and unmarshals it as a ciphervector

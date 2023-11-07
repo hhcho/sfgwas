@@ -7,9 +7,9 @@ import (
 	"time"
 
 	mpc_core "github.com/hhcho/mpc-core"
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 
-	"github.com/hhcho/sfgwas-private/mpc"
+	"github.com/hhcho/sfgwas/mpc"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"go.dedis.ch/onet/v3/log"
 

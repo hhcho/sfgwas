@@ -3,9 +3,10 @@ package mpc
 import (
 	"encoding/binary"
 	"time"
+	"unsafe"
 
 	mpc_core "github.com/hhcho/mpc-core"
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/ring"
 	"go.dedis.ch/onet/v3/log"
 )
@@ -72,6 +73,30 @@ func UnmarshalCV(cryptoParams *crypto.CryptoParams, ncts int, sbytes, ctbytes []
 	}
 
 	return cv
+}
+
+// MarshalCiphermatrix returns byte array corresponding to ciphertext sizes (int array) and byte array corresponding to marshaling
+func MarshalCM(cm crypto.CipherMatrix) ([]byte, []byte) {
+	cmBytes, ctSizes, err := cm.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+
+	r, c := len(cm), len(cm[0])
+	intsize := uint64(unsafe.Sizeof(ctSizes[0][0]))
+	sizesbuf := make([]byte, intsize*uint64(r)*uint64(c))
+
+	offset := uint64(0)
+	for i := range ctSizes {
+		for j := range ctSizes[i] {
+			binary.LittleEndian.PutUint64(sizesbuf[offset:offset+intsize], uint64(ctSizes[i][j]))
+			offset += intsize
+		}
+
+	}
+
+	return sizesbuf, cmBytes
+
 }
 
 //TODO: dereferenced version --> need to check

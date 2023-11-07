@@ -270,6 +270,25 @@ func ReadFull(conn *net.Conn, buf []byte) {
 	}
 }
 
+func ReadFullWithErr(conn *net.Conn, buf []byte) error {
+	shift := 0
+	remaining := len(buf)
+	for {
+		received, err := (*conn).Read(buf[shift:])
+		if received == remaining {
+			break
+		} else if received < remaining {
+			shift += received
+			remaining -= received
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 //OpenChannel opens channel at specificed ip address and port and returns channel (server side, connection for client to listen to)
 func OpenChannel(ip, port string) (net.Conn, net.Listener) {
 	l, err := establishConn(ip, port)

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hhcho/sfgwas-private/crypto"
-	"github.com/hhcho/sfgwas-private/mpc"
+	"github.com/hhcho/sfgwas/crypto"
+	"github.com/hhcho/sfgwas/mpc"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -230,6 +230,21 @@ func Sum(a []int) int {
 	}
 	return res
 }
+func SumF(a []float64) float64 {
+	res := 0.0
+	for i := range a {
+		res += a[i]
+	}
+	return res
+}
+
+func ScaleF(a []float64, scale float64) []float64 {
+	res := make([]float64, len(a))
+	for i := range a {
+		res[i] = a[i] * scale
+	}
+	return res
+}
 
 func SumBool(a []bool) int {
 	res := 0
@@ -382,7 +397,7 @@ func SaveMatrixToFile(cps *crypto.CryptoParams, mpcObj *mpc.MPC, cm crypto.Ciphe
 		return
 	}
 
-	pm := mpcObj.Network.CollectiveDecryptMat(cps, cm, sourcePid)
+	pm, _ := mpcObj.Network.CollectiveDecryptMat(cps, cm, sourcePid)
 
 	M := mat.NewDense(len(cm), nElemCol, nil)
 	for i := range pm {

@@ -3,7 +3,7 @@ package mpc
 import (
 	// "bufio"
 
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/drlwe"
 
 	"github.com/ldsec/lattigo/v2/ckks"

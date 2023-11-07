@@ -10,12 +10,12 @@ import (
 
 	"go.dedis.ch/onet/v3/log"
 
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/ring"
 
 	"math"
 
-	"github.com/hhcho/sfgwas-private/mpc"
+	"github.com/hhcho/sfgwas/mpc"
 	"github.com/ldsec/lattigo/v2/ckks"
 
 	"gonum.org/v1/gonum/mat"

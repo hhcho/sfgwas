@@ -27,6 +27,7 @@ type IntervalApprox struct {
 	Degree     int
 	Iter       int
 	InverseNew bool
+	ScaleDowns []float64
 }
 
 // CipherVector is a slice of Ciphertexts
@@ -57,6 +58,7 @@ type CryptoParams struct {
 
 	numThreads int
 	prec       uint
+	BootLimit  int
 }
 
 // CryptoParamsForNetwork stores all crypto info to save to file
@@ -369,6 +371,36 @@ func EncryptFloatVector(cryptoParams *CryptoParams, f []float64) (CipherVector, 
 	return cipherArr, elementsEncrypted
 }
 
+func EncryptFloatVectorWithScale(cryptoParams *CryptoParams, f []float64, scale float64) (CipherVector, int) {
+	nbrMaxCoef := cryptoParams.GetSlots()
+	length := len(f)
+
+	cipherArr := make(CipherVector, 0)
+	elementsEncrypted := 0
+	for elementsEncrypted < length {
+		start := elementsEncrypted
+		end := elementsEncrypted + nbrMaxCoef
+
+		if end > length {
+			end = length
+		}
+		plaintext := ckks.NewPlaintext(cryptoParams.Params, cryptoParams.Params.MaxLevel(), scale)
+		// pad to 0s
+		cryptoParams.WithEncoder(func(encoder ckks.Encoder) error {
+			encoder.Encode(plaintext, ConvertVectorFloat64ToComplex(PadVector(f[start:end], nbrMaxCoef)), cryptoParams.Params.LogSlots())
+			return nil
+		})
+		var cipher *ckks.Ciphertext
+		cryptoParams.WithEncryptor(func(encryptor ckks.Encryptor) error {
+			cipher = encryptor.EncryptNew(plaintext)
+			return nil
+		})
+		cipherArr = append(cipherArr, cipher)
+		elementsEncrypted = elementsEncrypted + (end - start)
+	}
+	return cipherArr, elementsEncrypted
+}
+
 // EncryptFloatMatrixRow encrypts a matrix of float64 to multiple packed ciphertexts.
 // For this specific matrix encryption each row is encrypted in a set of ciphertexts.
 func EncryptFloatMatrixRow(cryptoParams *CryptoParams, matrix [][]float64) (CipherMatrix, int, int, error) {
@@ -385,6 +417,32 @@ func EncryptFloatMatrixRow(cryptoParams *CryptoParams, matrix [][]float64) (Ciph
 		matrixEnc = append(matrixEnc, rowEnc)
 	}
 	return matrixEnc, nbrRows, d, nil
+}
+
+// EncodeFloatVector encodes a slice of float64 values in multiple batched plaintext (ready to be encrypted).
+// It also returns the number of encoded elements.
+func EncodeFloatVectorWithScale(cryptoParams *CryptoParams, f []float64, scale float64) (PlainVector, int) {
+	nbrMaxCoef := cryptoParams.GetSlots()
+	length := len(f)
+
+	plainArr := make(PlainVector, 0)
+	elementsEncoded := 0
+	for elementsEncoded < length {
+		start := elementsEncoded
+		end := elementsEncoded + nbrMaxCoef
+
+		if end > length {
+			end = length
+		}
+		plaintext := ckks.NewPlaintext(cryptoParams.Params, cryptoParams.Params.MaxLevel(), scale)
+		cryptoParams.WithEncoder(func(encoder ckks.Encoder) error {
+			encoder.EncodeNTT(plaintext, ConvertVectorFloat64ToComplex(PadVector(f[start:end], nbrMaxCoef)), cryptoParams.Params.LogSlots())
+			return nil
+		})
+		plainArr = append(plainArr, plaintext)
+		elementsEncoded = elementsEncoded + (end - start)
+	}
+	return plainArr, elementsEncoded
 }
 
 // EncodeFloatVector encodes a slice of float64 values in multiple batched plaintext (ready to be encrypted).
@@ -525,6 +583,20 @@ func DecodeFloatVector(cryptoParams *CryptoParams, fEncoded PlainVector) []float
 			return nil
 		})
 		dataDecoded = append(dataDecoded, ConvertVectorComplexToFloat64(val)...)
+	}
+	return dataDecoded
+}
+
+// DecodeFloatVector2 decodes a slice of plaintext values in multiple float64 values, along with their imaginary components.
+func DecodeFloatVector2(cryptoParams *CryptoParams, fEncoded PlainVector) []complex128 {
+	dataDecoded := make([]complex128, 0)
+	for _, plaintext := range fEncoded {
+		var val []complex128
+		cryptoParams.WithEncoder(func(encoder ckks.Encoder) error {
+			val = encoder.Decode(plaintext, cryptoParams.Params.LogSlots())
+			return nil
+		})
+		dataDecoded = append(dataDecoded, val...)
 	}
 	return dataDecoded
 }
