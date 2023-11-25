@@ -462,6 +462,9 @@ func (netObj ParallelNetworks) CollectiveRotKeyGen(parameters *ckks.Parameters, 
 		i++
 	}
 
+	// added this for computing conjugation
+	gElems = append(gElems, parameters.GaloisElementForRowRotation())
+
 	// Need to sortInt otherwise different parties might have different ordering
 	sort.Slice(gElems, func(i, j int) bool { return gElems[i] < gElems[j] })
 
