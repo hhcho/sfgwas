@@ -2700,6 +2700,14 @@ func (mpcObjs ParallelMPC) Divide(a, b mpc_core.RVec, binaryVersion bool) mpc_co
 		})
 }
 
+func (mpcObjs ParallelMPC) Sqrt(a mpc_core.RVec, binaryVersion bool) mpc_core.RVec {
+	return mpcObjs.runParallel(mpc_core.RMat{a}, nil, "Sqrt", mpcObjs[0].divSqrtMaxLen,
+		func(mpc *MPC, mat mpc_core.RMat, aux mpc_core.RElem) mpc_core.RVec {
+			res, _ := mpc.SqrtAndSqrtInverse(mat[0], binaryVersion)
+			return res
+		})
+}
+
 func (mpcObjs ParallelMPC) SqrtInv(a mpc_core.RVec, binaryVersion bool) mpc_core.RVec {
 	return mpcObjs.runParallel(mpc_core.RMat{a}, nil, "SqrtInv", mpcObjs[0].divSqrtMaxLen,
 		func(mpc *MPC, mat mpc_core.RMat, aux mpc_core.RElem) mpc_core.RVec {
