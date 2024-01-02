@@ -588,15 +588,15 @@ func DecodeFloatVector(cryptoParams *CryptoParams, fEncoded PlainVector) []float
 }
 
 // DecodeFloatVector2 decodes a slice of plaintext values in multiple float64 values, along with their imaginary components.
-func DecodeFloatVector2(cryptoParams *CryptoParams, fEncoded PlainVector) []complex128 {
-	dataDecoded := make([]complex128, 0)
+func DecodeFloatVector2(cryptoParams *CryptoParams, fEncoded PlainVector) [][]complex128 {
+	dataDecoded := make([][]complex128, 0)
 	for _, plaintext := range fEncoded {
 		var val []complex128
 		cryptoParams.WithEncoder(func(encoder ckks.Encoder) error {
 			val = encoder.Decode(plaintext, cryptoParams.Params.LogSlots())
 			return nil
 		})
-		dataDecoded = append(dataDecoded, val...)
+		dataDecoded = append(dataDecoded, val)
 	}
 	return dataDecoded
 }
