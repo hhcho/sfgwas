@@ -1527,6 +1527,44 @@ func MatMult4TransformB(cryptoParams *crypto.CryptoParams, B *mat.Dense) PlainMa
 	return cache
 }
 
+// Caches a banded matrix B with specified upper and lower bandwidth.
+// Assumes that B is at most a (slots x slots) matrix, for `slots` the number of slots in a ciphertext.
+func MatMult4TransformBandedB(cryptoParams *crypto.CryptoParams, B *mat.Dense, upperBandwidth, lowerBandwidth int) PlainMatrixDiagCache {
+	slots := cryptoParams.GetSlots()
+	d := int(math.Ceil(math.Sqrt(float64(slots))))
+	blockB := ToBlockMatrix(B, slots)
+
+	cache := make(PlainMatrixDiagCache, len(blockB))
+
+	// The band is the diagonals with shift indices in [0, upperBandwidth + 1) and [slots - lowerBandwidth, slots)
+	topDiagBound := upperBandwidth + 1 // The +1 is because we also want to include the main diagonal, which is index 0.
+	leftDiagBound := slots - lowerBandwidth
+	// log.LLvl1("topDiagBound:", topDiagBound, "; leftDiagBound", leftDiagBound)
+
+	for bi := range blockB {
+
+		cache[bi] = make([]crypto.PlainVector, slots)
+
+		for shift := 0; shift < slots; shift++ {
+			if topDiagBound <= shift && shift < leftDiagBound {
+				// The diagonal this shift corresponds falls outside of the band.
+				continue
+			}
+
+			giant := int(shift / d)
+			plainVec, flag := EncodeDiag(cryptoParams, blockB[bi], -shift, d*giant, cryptoParams.Params.MaxLevel())
+			if !flag {
+				cache[bi][shift] = nil
+			} else {
+				ToMontgomeryForm(cryptoParams, plainVec)
+				cache[bi][shift] = plainVec
+			}
+		}
+	}
+
+	return cache
+}
+
 func CPMatMult4CachedB(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, CachedB PlainMatrixDiagCache) crypto.CipherMatrix {
 	s := len(A)
 	slots := cryptoParams.GetSlots()
