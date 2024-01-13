@@ -1716,96 +1716,8 @@ func CPMatMult4V2CachedB(cryptoParams *crypto.CryptoParams, A crypto.CipherMatri
 	return out
 }
 
-// Generalized to levels >= 2
+// Parallelized version of `CPMatMult4V2CachedB`
 func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, maxLevel int, CachedB PlainMatrixDiagCache) crypto.CipherMatrix {
-	s := len(A)
-	slots := cryptoParams.GetSlots()
-	d := int(math.Ceil(math.Sqrt(float64(slots))))
-	//fmt.Println("slots", slots, "d", d)
-	//fmt.Println("brows", len(CachedB))
-
-	if A[0][0].Level() > maxLevel {
-		fmt.Println("Dropping level. Input:", A[0][0].Level())
-		A = crypto.DropLevel(cryptoParams, A, maxLevel)
-	}
-	fmt.Println("CPMatMult4V2CachedB, A level", A[0][0].Level())
-
-	out := make(crypto.CipherMatrix, s)
-	outScale := A[0][0].Scale() * cryptoParams.Params.Scale()
-
-	var wg sync.WaitGroup
-	var mutex sync.Mutex
-
-	for i := range A {
-
-		accCache := make([]CipherVectorAccV2, d) // Cache each of the sqrt(slots) groups
-		accCacheMux := make([]sync.Mutex, d)
-
-		for bi := range CachedB {
-
-			rotCache := make(crypto.CipherVector, d)
-
-			for shift := 0; shift < slots; shift++ {
-				if CachedB[bi][shift] == nil {
-					continue
-				}
-				wg.Add(1)
-				go func(shift int) {
-					defer wg.Done()
-					
-					baby, giant := shift%d, int(shift/d)
-					plainVec := CachedB[bi][shift]
-					
-					if rotCache[baby] == nil {
-						rotCache[baby] = crypto.RotateRight(cryptoParams, A[i][bi], -baby)
-					}
-					
-					cipherVec := make(crypto.CipherVector, len(plainVec))
-					for j := range cipherVec {
-						cipherVec[j] = rotCache[baby]
-					}
-					
-					if accCache[giant].val == nil {
-						accCache[giant] = NewCipherVectorAccV2(cryptoParams, len(plainVec), maxLevel)
-					}
-					
-					accCacheMux[giant].Lock()
-					CPMultAccWithoutMRedV2(cipherVec, plainVec, accCache[giant])
-					accCacheMux[giant].Unlock()
-				}(shift)
-			}
-			wg.Wait()
-		}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for l := range accCache {
-				if accCache[l].val == nil {
-					continue
-				}
-				cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
-				if l > 0 { // Giant step alignment
-					for j := range cv {
-						cv[j] = crypto.RotateRight(cryptoParams, cv[j], -l*d)
-					}
-				}
-				
-				mutex.Lock()
-				if out[i] == nil {
-				out[i] = cv
-				} else {
-					out[i] = crypto.CAdd(cryptoParams, out[i], cv)
-				}
-				mutex.Unlock()
-			}
-		}()
-		wg.Wait()
-	}
-	return out
-}
-
-func CPMatMult4V2CachedBParallel2(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, maxLevel int, CachedB PlainMatrixDiagCache) crypto.CipherMatrix {
 	s := len(A)
 	slots := cryptoParams.GetSlots()
 	d := int(math.Ceil(math.Sqrt(float64(slots))))
@@ -1817,7 +1729,7 @@ func CPMatMult4V2CachedBParallel2(cryptoParams *crypto.CryptoParams, A crypto.Ci
 		fmt.Println("Dropping level. Input:", A[0][0].Level())
 		A = crypto.DropLevel(cryptoParams, A, maxLevel)
 	}
-	fmt.Println("CPMatMult4V2CachedB, A level", A[0][0].Level())
+	fmt.Println("CPMatMult4V2CachedBParallel, A level", A[0][0].Level())
 
 	out := make(crypto.CipherMatrix, s)
 	outScale := A[0][0].Scale() * cryptoParams.Params.Scale()
@@ -1934,8 +1846,6 @@ func CPMatMult4V2CachedBParallel2(cryptoParams *crypto.CryptoParams, A crypto.Ci
 			wg.Wait()
 		}
 
-		log.LLvl1(time.Now().Format(time.RFC3339), "Postprocessing accumulators")
-
 		aggChannel := make(chan crypto.CipherVector, 16)
 		out[i] = crypto.CZeros(cryptoParams, veclen)
 
@@ -1987,9 +1897,7 @@ func CPMatMult4V2CachedBParallel2(cryptoParams *crypto.CryptoParams, A crypto.Ci
 
 			for cv := range aggChannel {
 				for j := range cv {
-					foo := out[i][j]
-					bar := cv[j]
-					eva.Add(foo, bar, foo)
+					eva.Add(out[i][j], cv[j], out[i][j])
 				}
 			}
 		}()
