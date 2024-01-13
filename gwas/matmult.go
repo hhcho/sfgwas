@@ -1739,6 +1739,7 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 	for i := range A {
 
 		accCache := make([]CipherVectorAccV2, d) // Cache each of the sqrt(slots) groups
+		accCacheMux := make([]sync.Mutex, d)
 
 		for bi := range CachedB {
 
@@ -1768,21 +1769,21 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 						accCache[giant] = NewCipherVectorAccV2(cryptoParams, len(plainVec), maxLevel)
 					}
 					
-					mutex.Lock()
+					accCacheMux[giant].Lock()
 					CPMultAccWithoutMRedV2(cipherVec, plainVec, accCache[giant])
-					mutex.Unlock()
+					accCacheMux[giant].Unlock()
 				}(shift)
 			}
 			wg.Wait()
 		}
 
-		for l := range accCache {
-			if accCache[l].val == nil {
-				continue
-			}
-			wg.Add(1)
-			go func(l int) {
-				defer wg.Done()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for l := range accCache {
+				if accCache[l].val == nil {
+					continue
+				}
 				cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
 				if l > 0 { // Giant step alignment
 					for j := range cv {
@@ -1797,9 +1798,9 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 					out[i] = crypto.CAdd(cryptoParams, out[i], cv)
 				}
 				mutex.Unlock()
-			}(l)
-			wg.Wait()
-		}
+			}
+		}()
+		wg.Wait()
 	}
 	return out
 }
