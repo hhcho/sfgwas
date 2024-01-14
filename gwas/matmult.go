@@ -1715,3 +1715,196 @@ func CPMatMult4V2CachedB(cryptoParams *crypto.CryptoParams, A crypto.CipherMatri
 	}
 	return out
 }
+
+// Parallelized version of `CPMatMult4V2CachedB`
+func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, maxLevel int, CachedB PlainMatrixDiagCache) crypto.CipherMatrix {
+	s := len(A)
+	slots := cryptoParams.GetSlots()
+	d := int(math.Ceil(math.Sqrt(float64(slots))))
+	//fmt.Println("slots", slots, "d", d)
+	//fmt.Println("brows", len(CachedB))
+	nproc := runtime.GOMAXPROCS(0)
+
+	if A[0][0].Level() > maxLevel {
+		fmt.Println("Dropping level. Input:", A[0][0].Level())
+		A = crypto.DropLevel(cryptoParams, A, maxLevel)
+	}
+	fmt.Println("CPMatMult4V2CachedBParallel, A level", A[0][0].Level())
+
+	out := make(crypto.CipherMatrix, s)
+	outScale := A[0][0].Scale() * cryptoParams.Params.Scale()
+
+	type dataItem struct {
+		shift int
+		plainVec crypto.PlainVector
+	}
+
+	for i := range A {
+
+		accCache := make([]CipherVectorAccV2, d) // Cache each of the sqrt(slots) groups
+		accCacheMux := make([]sync.Mutex, d)
+		var veclen int
+
+		for bi := range CachedB {
+			// Populate what shifts exist for this cache
+			babyTable := make([]bool, d)
+			giantTable := make([]bool, d)
+			shiftTable := make([]dataItem, slots)
+
+			for shift := 0; shift < slots; shift++ {
+				if CachedB[bi][shift] == nil {
+					continue
+				}
+				baby, giant := shift%d, int(shift/d)
+				plainVec := CachedB[bi][shift]
+				babyTable[baby] = true
+				giantTable[giant] = true
+				shiftTable[shift] = dataItem{shift, plainVec}
+				if veclen == 0 {
+					veclen = len(plainVec)
+				}
+			}
+
+
+			rotCache := make(crypto.CipherVector, d)
+			// Dispatcher
+			rotJobChannels := make([]chan int, nproc)
+			for i := range rotJobChannels {
+				rotJobChannels[i] = make(chan int, 32)
+			}
+
+			go func() {
+				for baby, flag := range babyTable {
+					if flag {
+						rotJobChannels[baby%nproc] <- baby
+					}
+				}
+				for _, c := range rotJobChannels {
+					close(c)
+				}
+			}()
+
+			// Workers
+			var workerGroup sync.WaitGroup
+			for thread := 0; thread < nproc; thread++ {
+				workerGroup.Add(1)
+				go func(thread int) {
+					defer workerGroup.Done()
+
+					eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+
+					for baby := range rotJobChannels[thread] {
+						// No need for a nil check since we know each `baby` value is submitted only once`
+						rotCache[baby] = crypto.RotateRightWithEvaluator(cryptoParams, A[i][bi], -baby, eva)
+					}
+				}(thread)
+			}
+			workerGroup.Wait()
+
+			for giant, flag := range giantTable {
+				if flag {
+					if accCache[giant].val == nil {
+						accCache[giant] = NewCipherVectorAccV2(cryptoParams, veclen, maxLevel)
+					}
+				}
+			}
+
+			var wg sync.WaitGroup
+
+			diagChannels := make([]chan dataItem, nproc)
+			for i := range diagChannels {
+				diagChannels[i] = make(chan dataItem, 8)
+			}
+
+			// Data feeder
+			go func() {
+				for _, item := range shiftTable {
+					shift, plainVec := item.shift, item.plainVec
+					if plainVec != nil {
+						diagChannels[shift%nproc] <- item
+					}
+				}
+				for _, c := range diagChannels {
+					close(c)
+				}
+			}()
+
+			// Data processors
+			for thread := 0; thread < nproc; thread++ {
+				wg.Add(1)
+				go func(thread int) {
+					defer wg.Done()
+					for item := range diagChannels[thread] {
+						shift, plainVec := item.shift, item.plainVec
+						baby, giant := shift%d, shift/d
+						accCacheMux[giant].Lock()
+						CPMultAccWithoutMRedV2(crypto.CipherVector{rotCache[baby]}, plainVec, accCache[giant])
+						accCacheMux[giant].Unlock()
+					}
+				}(thread)
+			}
+			wg.Wait()
+		}
+
+		aggChannel := make(chan crypto.CipherVector, 16)
+		out[i] = crypto.CZeros(cryptoParams, veclen)
+
+		// Modred Jobs
+		jobChannels := make([]chan int, nproc)
+		for j := range jobChannels {
+			jobChannels[j] = make(chan int, 32)
+		}
+
+		go func() {
+			for l := range accCache {
+				if accCache[l].val != nil {
+					jobChannels[l%nproc] <- l
+				}
+			}
+			for _, c := range jobChannels {
+				close(c)
+			}
+		}()
+
+		var wg sync.WaitGroup
+		for thread := 0; thread < nproc; thread++ {
+			wg.Add(1)
+			go func(thread int) {
+				defer wg.Done()
+
+				eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+
+				for l := range jobChannels[thread] {
+					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
+
+					if l > 0 { // Giant step alignment
+						for j := range cv {
+							cv[j] = crypto.RotateRightWithEvaluator(cryptoParams, cv[j], -l*d, eva)
+						}
+					}
+
+					aggChannel <- cv
+				}
+			}(thread)
+		}
+
+		var aggGroup sync.WaitGroup
+		aggGroup.Add(1)
+		go func() {
+			defer aggGroup.Done()
+
+			eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+
+			for cv := range aggChannel {
+				for j := range cv {
+					eva.Add(out[i][j], cv[j], out[i][j])
+				}
+			}
+		}()
+
+		wg.Wait()
+		close(aggChannel)
+		aggGroup.Wait()
+	}
+	return out
+}
