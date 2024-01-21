@@ -400,6 +400,8 @@ func (netObj ParallelNetworks) CollectiveRotKeyGen(parameters *ckks.Parameters, 
 		gElems[i] = parameters.GaloisElementForColumnRotationBy(k)
 		i++
 	}
+	// Add rotation for taking the complex conjugate
+	gElems = append(gElems, parameters.GaloisElementForRowRotation())
 
 	// Need to sortInt otherwise different parties might have different ordering
 	sort.Slice(gElems, func(i, j int) bool { return gElems[i] < gElems[j] })

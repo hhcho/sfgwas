@@ -763,3 +763,25 @@ func DropLevel(cryptoParams *CryptoParams, A CipherMatrix, outLevel int) CipherM
 	}
 	return out
 }
+
+// Returns the complex conjugate of a ciphervector.
+func ComplexConjugate(cryptoParams *CryptoParams, X CipherVector) CipherVector {
+	res := make(CipherVector, len(X)) // equal num of ciphertexts
+	cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		for i := 0; i < len(X); i++ {
+			// check level
+			res[i] = eval.ConjugateNew(X[i])
+		}
+		return nil
+	})
+	return res
+}
+
+// Returns the real component of a CipherVector.
+func CReal(cps *CryptoParams, Z CipherVector) (real CipherVector) {
+	conjZ := ComplexConjugate(cps, Z)
+	twiceReal := CAdd(cps, Z, conjZ)
+	CMultConst(cps, twiceReal, 0.5, true)
+	real = CRescale(cps, twiceReal)
+	return
+}
