@@ -390,6 +390,12 @@ func EncryptFloatMatrixRow(cryptoParams *CryptoParams, matrix [][]float64) (Ciph
 // EncodeFloatVector encodes a slice of float64 values in multiple batched plaintext (ready to be encrypted).
 // It also returns the number of encoded elements.
 func EncodeFloatVector(cryptoParams *CryptoParams, f []float64) (PlainVector, int) {
+	return EncodeFloatVectorWithScale(cryptoParams, f, cryptoParams.Params.Scale())
+}
+
+// EncodeFloatVector encodes a slice of float64 values in multiple batched plaintext (ready to be encrypted).
+// It also returns the number of encoded elements.
+func EncodeFloatVectorWithScale(cryptoParams *CryptoParams, f []float64, scale float64) (PlainVector, int) {
 	nbrMaxCoef := cryptoParams.GetSlots()
 	length := len(f)
 
@@ -402,7 +408,7 @@ func EncodeFloatVector(cryptoParams *CryptoParams, f []float64) (PlainVector, in
 		if end > length {
 			end = length
 		}
-		plaintext := ckks.NewPlaintext(cryptoParams.Params, cryptoParams.Params.MaxLevel(), cryptoParams.Params.Scale())
+		plaintext := ckks.NewPlaintext(cryptoParams.Params, cryptoParams.Params.MaxLevel(), scale)
 		cryptoParams.WithEncoder(func(encoder ckks.Encoder) error {
 			encoder.EncodeNTT(plaintext, ConvertVectorFloat64ToComplex(PadVector(f[start:end], nbrMaxCoef)), cryptoParams.Params.LogSlots())
 			return nil
@@ -667,7 +673,7 @@ func (cv *CipherVector) DummyBootstrapping(serverID string, cryptoParams *Crypto
 var _ encoding.BinaryMarshaler = new(CryptoParams)
 var _ encoding.BinaryUnmarshaler = new(CryptoParams)
 
-//MarshalBinary for minimal cryptoParams-keys + params
+// MarshalBinary for minimal cryptoParams-keys + params
 func (cp *CryptoParams) MarshalBinary() ([]byte, error) {
 	var ret bytes.Buffer
 	encoder := gob.NewEncoder(&ret)

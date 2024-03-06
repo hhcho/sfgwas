@@ -40,7 +40,7 @@ To install SF-GWAS, clone the repository and try building as follows.
 ```
 git clone https://github.com/hhcho/sfgwas
 cd sfgwas
-go get github.com/hhcho/sfgwas-private
+go get github.com/hhcho/sfgwas
 go build
 ```
 

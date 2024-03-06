@@ -2,13 +2,17 @@ package mpc
 
 import (
 	"fmt"
+	"gonum.org/v1/gonum/mat"
+	"math"
+	"os"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/aead/chacha20/chacha"
 	"github.com/hhcho/frand"
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/dckks"
 	"github.com/ldsec/lattigo/v2/ring"
 	"github.com/ldsec/lattigo/v2/utils"
@@ -343,7 +347,7 @@ func (netObj *Network) CollectiveBootstrapMat(cps *crypto.CryptoParams, cm crypt
 
 }
 
-//BootstrapMatAll: collective bootstrap for all parties (except 0)
+// BootstrapMatAll: collective bootstrap for all parties (except 0)
 func (netObj *Network) BootstrapMatAll(cps *crypto.CryptoParams, cm crypto.CipherMatrix) crypto.CipherMatrix {
 
 	tmp := make(crypto.CipherMatrix, len(cm))
@@ -545,4 +549,129 @@ func (netObj *Network) BroadcastCiphertext(cps *crypto.CryptoParams, ct *ckks.Ci
 		ct = netObj.ReceiveCiphertext(cps, sourcePid)
 	}
 	return ct
+}
+
+func SaveMatrixToFileWithPrint(cps *crypto.CryptoParams, mpcObj *MPC, cm crypto.CipherMatrix, nElemCol int, sourcePid int, filename string, print bool) {
+	SaveMatrixToFileWithPrintIndex(cps, mpcObj, cm, nElemCol, sourcePid, filename, print, 0, 10)
+}
+
+// SaveMatrixToFileWithPrint saves a matrix to a file and prints the first nElemCol elements of each row
+func SaveMatrixToFileWithPrintIndex(cps *crypto.CryptoParams, mpcObj *MPC, cm crypto.CipherMatrix, nElemCol int, sourcePid int, filename string, print bool, firstIndex, lastIndex int) {
+	log.LLvl1("Saving matrix to file", filename, "from pid", sourcePid, "with", len(cm), "rows and", nElemCol, "columns")
+	pid := mpcObj.GetPid()
+	if pid == 0 {
+		return
+	}
+
+	pm := mpcObj.Network.CollectiveDecryptMat(cps, cm, sourcePid)
+
+	if pid == sourcePid || sourcePid < 0 {
+
+		M := mat.NewDense(len(cm), nElemCol, nil)
+		for i := range pm {
+			decodedRow := crypto.DecodeFloatVector(cps, pm[i])[:nElemCol]
+			if print {
+				log.LLvl1(filename, " : ", decodedRow[firstIndex:int(crypto.Min(nElemCol, lastIndex))])
+			}
+
+			M.SetRow(i, decodedRow)
+		}
+		log.LLvl1("Matrix decoded")
+
+		f, err := os.Create(filename)
+
+		if err != nil {
+			panic(err)
+		}
+
+		defer f.Close()
+
+		rows, cols := M.Dims()
+
+		for row := 0; row < rows; row++ {
+			line := make([]string, cols)
+			for col := 0; col < cols; col++ {
+				line[col] = fmt.Sprintf("%.6e", M.At(row, col))
+			}
+
+			f.WriteString(strings.Join(line, ",") + "\n")
+		}
+
+		f.Sync()
+
+		fmt.Println("Saved data to", filename)
+
+	}
+
+}
+
+func CSigmoidApprox(sourcePid int, net *Network, cryptoParams *crypto.CryptoParams, ctIn crypto.CipherVector,
+	intv crypto.IntervalApprox, mutex *sync.Mutex) crypto.CipherVector {
+	res := make(crypto.CipherVector, len(ctIn))
+	for i := range ctIn {
+		res[i] = SigmoidApprox(sourcePid, net, cryptoParams, ctIn[i], intv, mutex)
+	}
+	return res
+}
+
+func SigmoidApprox(sourcePid int, net *Network, cryptoParams *crypto.CryptoParams, ctIn *ckks.Ciphertext,
+	intv crypto.IntervalApprox, mutex *sync.Mutex) *ckks.Ciphertext {
+	var y *ckks.Ciphertext
+
+	if intv.Degree == 0 {
+		ctDecrypt := net.CollectiveDecrypt(cryptoParams, ctIn, sourcePid)
+		cdDecode := crypto.DecodeFloatVector(cryptoParams, crypto.PlainVector{ctDecrypt})
+		cdOut := make([]float64, len(cdDecode))
+		log.LLvl1("before approx result ", cdDecode[:300])
+		for i := 0; i < len(cdDecode); i++ {
+			cdOut[i] = 1.0 / math.Sqrt(cdDecode[i])
+		}
+		log.LLvl1("approx result ", cdOut[:300])
+		cdOutEncrypted, _ := crypto.EncryptFloatVector(cryptoParams, cdOut)
+		return cdOutEncrypted[0]
+	} else {
+
+		cheby := ckks.Approximate(Sigmoid, complex(intv.A, 0), complex(intv.B, 0), intv.Degree)
+		// We evaluate the interpolated Chebyshev interpolant on y
+		// Change of variable
+		a := cheby.A()
+		b := cheby.B()
+
+		if ctIn.Level() < int(math.Ceil(math.Log2(float64(intv.Degree+1)))+1)+2 {
+			mutex.Lock()
+			ctIn = net.BootstrapVecAll(cryptoParams, crypto.CipherVector{ctIn})[0]
+			mutex.Unlock()
+		}
+
+		err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+			y = eval.MultByConstNew(ctIn.CopyNew().Ciphertext(), 2/(b-a))
+			if err := eval.Rescale(y, cryptoParams.Params.Scale(), y); err != nil {
+				panic(err)
+			}
+			eval.AddConst(y, (-a-b)/(b-a), y)
+			return nil
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		ctInCopy := y.CopyNew().Ciphertext()
+
+		err = cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+			var err error
+			y, err = eval.EvaluateCheby(ctInCopy, cheby, ctInCopy.Scale())
+			if err != nil {
+				log.Fatal(err)
+			}
+			return err
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return y
+}
+
+func Sigmoid(x complex128) complex128 {
+	return complex(1.0/(1+math.Exp(-real(x))), 0)
 }

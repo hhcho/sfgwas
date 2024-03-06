@@ -7,9 +7,9 @@ import (
 	"time"
 
 	mpc_core "github.com/hhcho/mpc-core"
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 
-	"github.com/hhcho/sfgwas-private/mpc"
+	"github.com/hhcho/sfgwas/mpc"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"go.dedis.ch/onet/v3/log"
 
@@ -315,7 +315,7 @@ func NetDQRenc(cryptoParams *crypto.CryptoParams, mpcObj *mpc.MPC, A crypto.Ciph
 	return Q //nil for pid=0
 }
 
-//NetDQRplain returns Q all zeros (or nil) (for pid=0), else returns share of Q for each party
+// NetDQRplain returns Q all zeros (or nil) (for pid=0), else returns share of Q for each party
 func NetDQRplain(cryptoParams *crypto.CryptoParams, mpcObj *mpc.MPC, A crypto.PlainMatrix, nrowsAll []int) crypto.CipherMatrix {
 	pid := mpcObj.GetPid()
 	ncols := len(A) //column encrypted
