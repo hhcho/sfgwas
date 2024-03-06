@@ -1,6 +1,6 @@
 num_main_parties = 2
 hub_party_id = 1
-debug = true
+debug = false
 
 ## Crypto parameters
 # Options: PN12QP109, PN13QP218, PN14QP438, PN15QP880, PN16QP1761
