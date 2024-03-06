@@ -35,7 +35,7 @@ func EncryptDense(cryptoParams *CryptoParams, vals *mat.Dense) CipherMatrix {
 	return valsEnc
 }
 
-//Takes PlaintextMatrix and returns a denseMatrix: if col is true (ie pt is a column encoded matrix, then we transpose)
+// Takes PlaintextMatrix and returns a denseMatrix: if col is true (ie pt is a column encoded matrix, then we transpose)
 func PlaintextToDense(cryptoParams *CryptoParams, pt PlainMatrix, ptVecSize int) *mat.Dense {
 	vals := make([]float64, len(pt)*ptVecSize)
 	for i := range pt {
@@ -87,7 +87,7 @@ func GlobalToPartyIndex(cryptoParams *CryptoParams, Arowdims []int, col, nparty 
 	return pid, ctid, slotid
 }
 
-//DCopyEncrypted returns a shallow? copy of A?
+// DCopyEncrypted returns a shallow? copy of A?
 func DCopyEncrypted(A []CipherMatrix) []CipherMatrix {
 	Acopy := make([]CipherMatrix, len(A))
 	for p := range A {
@@ -232,7 +232,7 @@ func Mult(cryptoParams *CryptoParams, ct1 *ckks.Ciphertext, ct2 *ckks.Ciphertext
 	return res
 }
 
-//RotateAndAdd computes the inner sum of a Ciphertext
+// RotateAndAdd computes the inner sum of a Ciphertext
 func RotateAndAdd(cryptoParams *CryptoParams, ct *ckks.Ciphertext, size int) *ckks.Ciphertext {
 	ctOut := ct.CopyNew().Ciphertext()
 	for rotate := 1; rotate < size; rotate *= 2 {
@@ -374,7 +374,7 @@ func CZeros(cryptoParams *CryptoParams, n int) CipherVector {
 	return cv
 }
 
-//column based
+// column based
 func CZeroMat(cryptoParams *CryptoParams, nrows, ncols int) CipherMatrix {
 	cm := make(CipherMatrix, ncols)
 	for r := range cm {
@@ -494,6 +494,21 @@ func CMultConst(cryptoParams *CryptoParams, X CipherVector, constant interface{}
 		return nil
 	})
 	return res
+}
+
+func CMatRescale(cryptoParams *CryptoParams, X CipherMatrix) CipherMatrix {
+	err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		for j := range X {
+			for i := range X[j] {
+				eval.Rescale(X[j][i], cryptoParams.Params.Scale(), X[j][i])
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return X
 }
 
 func FlattenLevels(cryptoParams *CryptoParams, X CipherMatrix) (CipherMatrix, int) {
@@ -626,19 +641,6 @@ func CInverse(cryptoParams *CryptoParams, X CipherVector, intv IntervalApprox) C
 	return y
 }
 
-func CRescale(cryptoParams *CryptoParams, X CipherVector) CipherVector {
-	err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
-		for i := range X {
-			eval.Rescale(X[i], cryptoParams.Params.Scale(), X[i])
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	return X
-}
-
 func LevelTest(ciphers CipherVector, cryptoParams *CryptoParams, needed int, serverID, name string) CipherVector {
 	if ciphers[0].Level() <= needed {
 		log.LLvl1(time.Now().Format(time.RFC3339), "Dummy Bootstrapping called")
@@ -656,6 +658,63 @@ func LevelTestMatrix(ciphers CipherMatrix, cryptoParams *CryptoParams, needed in
 		}
 	}
 	return ciphers
+}
+
+// Initializes a new encrypted matrix with dy rows and dx columns.
+func InitEncryptedMatrix(cryptoParams *CryptoParams, dy int, dx int) (CipherMatrix, int, int, error) {
+	matrix := make([][]float64, dy)
+	for i := range matrix {
+		matrix[i] = make([]float64, dx)
+	}
+	return EncryptFloatMatrixRow(cryptoParams, matrix)
+}
+
+// Masks out one or multiple values in a ciphervector.
+func CMask(cryptoParams *CryptoParams, cv CipherVector, index int, keepRest bool) CipherVector {
+	if cv == nil {
+		return nil
+	}
+	m := make([]float64, cryptoParams.GetSlots()*len(cv))
+	if keepRest {
+		for i := range m {
+			if i != index {
+				m[i] = 1.0
+			}
+		}
+	} else {
+		m[index] = 1.0
+	}
+
+	mask, _ := EncodeFloatVector(cryptoParams, m)
+	cv = CPMult(cryptoParams, cv, mask)
+
+	return cv
+}
+
+// Subtracts a ciphervector from a plaintext vector.
+func CPSubOther(cryptoParams *CryptoParams, X PlainVector, Y CipherVector) CipherVector {
+	res := make(CipherVector, len(X))
+	cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		for i := range Y {
+			res[i] = eval.SubNew(X[i], Y[i])
+		}
+		return nil
+	})
+	return res
+
+}
+
+func CRescale(cryptoParams *CryptoParams, X CipherVector) CipherVector {
+	err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		for i := range X {
+			eval.Rescale(X[i], cryptoParams.Params.Scale(), X[i])
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return X
 }
 
 /*TODO: LEGACY CODE NEED TO REMOVE*/
