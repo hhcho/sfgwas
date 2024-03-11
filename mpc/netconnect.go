@@ -161,12 +161,13 @@ func InitializeParallelPRG(sharedKeysPath string, network []*Network, pid int, n
 	}
 	randMaster := InitializePRG(pid, nparties, sharedKeysPath)
 	for i := range network {
+		network[i].Rand = &Random{}
+		network[i].Rand.prgTable = make(map[int]*frand.RNG)
 		for j := -1; j < nparties; j++ {
 			seed := make([]byte, chacha.KeySize)
 			randMaster.SwitchPRG(j)
 			randMaster.RandRead(seed)
 			randMaster.RestorePRG()
-			network[i].Rand = &Random{}
 			network[i].Rand.prgTable[j] = frand.NewCustom(seed, bufferSize, 20)
 		}
 		network[i].Rand.curPRG = network[i].Rand.prgTable[pid]
