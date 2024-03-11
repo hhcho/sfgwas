@@ -15,6 +15,7 @@ import (
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/dckks"
 	"github.com/ldsec/lattigo/v2/ring"
+	"go.dedis.ch/onet/v3/log"
 )
 
 type Network struct {
@@ -147,12 +148,29 @@ func InitCommunication(bindingIP string, servers map[string]Server, pid, npartie
 
 	wg.Wait()
 
-	for i := range network {
-		network[i].Rand = InitializePRG(pid, nparties, sharedKeysPath)
-	}
+	// update threads initialize using different outputs of the same seed
+	InitializeParallelPRG(sharedKeysPath, network, pid, nparties)
 
 	return network
 
+}
+
+func InitializeParallelPRG(sharedKeysPath string, network []*Network, pid int, nparties int) {
+	if sharedKeysPath == "" {
+		log.LLvl1("Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).")
+	}
+	randMaster := InitializePRG(pid, nparties, sharedKeysPath)
+	for i := range network {
+		for j := -1; j < nparties; j++ {
+			seed := make([]byte, chacha.KeySize)
+			randMaster.SwitchPRG(j)
+			randMaster.RandRead(seed)
+			randMaster.RestorePRG()
+			network[i].Rand.prgTable[j] = frand.NewCustom(seed, bufferSize, 20)
+		}
+		network[i].Rand.curPRG = network[i].Rand.prgTable[pid]
+		network[i].Rand.pid = pid
+	}
 }
 
 func initNetworkForThread(bindingIP string, servers map[string]Server, pid int, nparties, thread int) *Network {
