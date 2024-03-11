@@ -166,6 +166,7 @@ func InitializeParallelPRG(sharedKeysPath string, network []*Network, pid int, n
 			randMaster.SwitchPRG(j)
 			randMaster.RandRead(seed)
 			randMaster.RestorePRG()
+			network[i].Rand = &Random{}
 			network[i].Rand.prgTable[j] = frand.NewCustom(seed, bufferSize, 20)
 		}
 		network[i].Rand.curPRG = network[i].Rand.prgTable[pid]
