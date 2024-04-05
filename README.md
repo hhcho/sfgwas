@@ -99,6 +99,7 @@ We provide both variant information files and the genotype counts for the exampl
 ### Setting the configuration
 
 Example config files are provided in `config/`. There are both global config parameters shared by all parties and party-specific parameters.
+The global parameter 'use_logistic' enables users to opt for logistic regression-based association tests; otherwise, the default workflow with linear regression is executed.
 
 ### Running the program
 
