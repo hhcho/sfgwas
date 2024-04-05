@@ -109,7 +109,7 @@ func pascalmat(rtype mpc_core.RElem, pow int) mpc_core.RMat {
 	return res
 }
 
-//GetPascalMat retrieves the pascal matrix associated with the given power
+// GetPascalMat retrieves the pascal matrix associated with the given power
 func (mpcObj *MPC) GetPascalMatrix(rtype mpc_core.RElem, pow int) mpc_core.RMat {
 	k := TypedKey{pow, rtype.TypeID()}
 
@@ -2859,4 +2859,30 @@ func (mpcObj *MPC) MatrixInverseSymPos(ASymPosDef mpc_core.RMat) (AInv, AInvSqrt
 	AInv = mpcObj.TruncMat(AInv, mpcObj.GetDataBits(), mpcObj.GetFracBits())
 
 	return
+}
+
+// Takes input A and returns B such that B^T * B = A
+// Requirement: A is symmetric
+func (mpcObj *MPC) MatrixInverseSqrtSVD(A mpc_core.RMat) (AInvSqrt mpc_core.RMat) {
+	// Symmetrize A
+	Asym := A.Copy()
+	Asym.Add(A.Transpose())
+
+	log.LLvl1("EigenDecomp start")
+	Ut, S := mpcObj.EigenDecomp(Asym)
+	log.LLvl1("EigenDecomp done")
+
+	_, S_SqrtInv := mpcObj.SqrtAndSqrtInverse(S, false)
+	S_SqrtInvr, S_SqrtInvm := mpcObj.BeaverPartitionVec(S_SqrtInv)
+
+	Utr, Utm := mpcObj.BeaverPartitionMat(Ut)
+
+	B := make(mpc_core.RMat, len(Ut))
+	for i := range B {
+		B[i] = mpcObj.BeaverMultMat(mpc_core.RMat{mpc_core.RVec{S_SqrtInvr[i]}}, mpc_core.RMat{mpc_core.RVec{S_SqrtInvm[i]}}, mpc_core.RMat{Utr[i]}, mpc_core.RMat{Utm[i]})[0]
+	}
+	B = mpcObj.BeaverReconstructMat(B)
+	B = mpcObj.TruncMat(B, mpcObj.GetDataBits(), mpcObj.GetFracBits()) // Truncate and divide by 2 (since we added A' to A)
+
+	return B
 }

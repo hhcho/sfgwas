@@ -1,4 +1,4 @@
-module github.com/hhcho/sfgwas-private
+module github.com/hhcho/sfgwas
 
 go 1.18
 
@@ -43,4 +43,5 @@ require (
 )
 
 replace github.com/ldsec/lattigo/v2 => ../lattigo
+
 replace github.com/hhcho/mpc-core => ../mpc-core

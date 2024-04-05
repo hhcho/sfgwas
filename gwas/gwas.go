@@ -15,8 +15,8 @@ import (
 
 	"github.com/ldsec/lattigo/v2/ckks"
 
-	"github.com/hhcho/sfgwas-private/crypto"
-	"github.com/hhcho/sfgwas-private/mpc"
+	"github.com/hhcho/sfgwas/crypto"
+	"github.com/hhcho/sfgwas/mpc"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -102,6 +102,14 @@ type Config struct {
 	LocalNumThreads             int    `toml:"local_num_threads"`
 	LocalAssocNumBlocksParallel int    `toml:"assoc_num_blocks_parallel"`
 	MemoryLimit                 uint64 `toml:"memory_limit"`
+
+	// Logistic regression specific
+	UseLogistic     bool    `toml:"use_logistic"`
+	InverseMatScale float64 `toml:"inverse_mat_scale"`
+	A               float64 `toml:"A"`
+	B               float64 `toml:"B"`
+	Degree          int     `toml:"degree"`
+	Epochs          int     `toml:"epochs"`
 
 	Debug          bool  `toml:"debug"`
 	BlocksForAssoc []int `toml:"blocks_for_assoc_test"`
@@ -488,7 +496,7 @@ func (g *ProtocolInfo) Test() {
 
 	out := make(crypto.CipherMatrix, 1)
 	if g.mpcObj[0].GetPid() == 2 {
-		out, _, _ = MatMult4Stream(params, crypto.CipherMatrix{cv}, gfs, 5, true, 0)
+		out, _, _ = MatMult4Stream(params, crypto.CipherMatrix{cv}, gfs, 5, true, false, 0)
 
 		d = out[0][0].Value()[0].Coeffs
 		log.LLvl1(time.Now().Format(time.RFC3339), "Out check:", d[0][0], d[1][1], d[2][2])

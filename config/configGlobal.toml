@@ -49,6 +49,14 @@ use_cached_combined_q = false
 pgen_batch_nsnp = 8192
 blocks_for_assoc_test = [] # tests all if empty
 
+## Logistic regression parameters
+use_logistic = false # has to be false to use linear regression
+inverse_mat_scale = 10000.00 # default value (based on experiments)
+A=-10.0 # default value
+B=10.0 # default value
+Degree=62 # default value
+epochs = 15 # default value
+
 ## Networking parameters
 # Party with a smaller ID listens for connection
 # Port only needed for the listener

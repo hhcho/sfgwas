@@ -10,12 +10,12 @@ import (
 
 	"go.dedis.ch/onet/v3/log"
 
-	"github.com/hhcho/sfgwas-private/crypto"
+	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/ring"
 
 	"math"
 
-	"github.com/hhcho/sfgwas-private/mpc"
+	"github.com/hhcho/sfgwas/mpc"
 	"github.com/ldsec/lattigo/v2/ckks"
 
 	"gonum.org/v1/gonum/mat"
@@ -1235,7 +1235,7 @@ func MatMult4StreamCompute(cryptoParams *crypto.CryptoParams, A crypto.CipherMat
 	return out
 }
 
-func MatMult4Stream(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, gfs *GenoFileStream, maxLevel int, computeSquaredSum bool, nproc int) (crypto.CipherMatrix, []float64, []float64) {
+func MatMult4Stream(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, gfs *GenoFileStream, maxLevel int, computeSquaredSum, square bool, nproc int) (crypto.CipherMatrix, []float64, []float64) {
 	gfs.Reset() // Reset to beginning of file just in case
 
 	nrow, ncol := gfs.NumRowsToKeep(), gfs.NumColsToKeep()
@@ -1297,6 +1297,9 @@ func MatMult4Stream(cryptoParams *crypto.CryptoParams, A crypto.CipherMatrix, gf
 				if computeSquaredSum {
 					sqSum[rj] += float64(row[rj] * row[rj])
 					sum[rj] += float64(row[rj])
+				}
+				if square { // optionnally square the values
+					row[rj] = row[rj] * row[rj]
 				}
 			}
 
@@ -1735,7 +1738,7 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 	outScale := A[0][0].Scale() * cryptoParams.Params.Scale()
 
 	type dataItem struct {
-		shift int
+		shift    int
 		plainVec crypto.PlainVector
 	}
 
@@ -1764,7 +1767,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 					veclen = len(plainVec)
 				}
 			}
-
 
 			rotCache := make(crypto.CipherVector, d)
 			// Dispatcher
@@ -1907,4 +1909,158 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 		aggGroup.Wait()
 	}
 	return out
+}
+
+// Basic matrix multiplication using inner products
+func CMultMatInnerProd(cryptoParams *crypto.CryptoParams, M, N crypto.CipherMatrix, numThreads int) crypto.CipherMatrix {
+	var mutex sync.Mutex
+	log.LLvl1("Matrix multiplication, result size ", len(M), "x", len(N))
+	result, _, _, err := crypto.InitEncryptedMatrix(cryptoParams, len(M), len(N))
+	if err != nil {
+		log.Fatal(err)
+	}
+	vparallelize := int(math.Ceil(float64(len(M)) / float64(numThreads)))
+	wg := sync.WaitGroup{}
+	for MRow := 0; MRow < len(M); MRow += vparallelize {
+		wg.Add(1)
+		go func(iT int) {
+			defer wg.Done()
+			for k := 0; k < vparallelize && (k+iT < len(M)); k++ {
+				for NCol := 0; NCol < len(N); NCol++ {
+					multi := crypto.InnerProd(cryptoParams, M[k+iT], crypto.CopyEncryptedVector(N[NCol]))
+					multiMasked := crypto.Mask(cryptoParams, multi, NCol, false)
+					mutex.Lock()
+					result[k+iT] = crypto.CAdd(cryptoParams, crypto.CipherVector{multiMasked}, result[k+iT])
+					mutex.Unlock()
+				}
+			}
+			log.LLvl1("processed row ", iT, "to", iT+vparallelize, "of", len(M), "rows")
+		}(MRow)
+	}
+	wg.Wait()
+
+	return result
+}
+
+// Matrix multiplication using inner products, with the result being a vector
+func CMultMatInnerProdVector(cryptoParams *crypto.CryptoParams, M crypto.CipherMatrix, N crypto.CipherVector, MCols, numThreads int) crypto.CipherVector {
+	var mutex sync.Mutex
+	log.LLvl1("Multiply Matrix with column vector: result size will be a vector of length", len(M))
+	result := crypto.CZeros(cryptoParams, int(math.Ceil(float64(len(M))/float64(cryptoParams.GetSlots()))))
+
+	// row col approach
+	vparallelize := int(math.Ceil(float64(len(M)) / float64(numThreads)))
+	wg := sync.WaitGroup{}
+	maskClear := make([]float64, cryptoParams.GetSlots()*len(M[0]))
+	for i := 0; i < MCols; i++ {
+		maskClear[i] = 1
+	}
+	log.LLvl1("NUmber of values kept in mask", MCols)
+	maskEncoded, _ := crypto.EncodeFloatVector(cryptoParams, maskClear)
+	N = crypto.CPMult(cryptoParams, N, maskEncoded)
+
+	for MRow := 0; MRow < len(M); MRow += vparallelize {
+		wg.Add(1)
+		go func(iT int) {
+			defer wg.Done()
+			for k := 0; k < vparallelize && (k+iT < len(M)); k++ {
+				// assume len(M) smaller than number of slots
+				if len(M) > cryptoParams.GetSlots() {
+					log.LLvl1("ERROR ! Number of rows in M is larger than the number of slots")
+				}
+				Mcurrent := crypto.CPMult(cryptoParams, M[k+iT], maskEncoded)
+				multi := crypto.InnerProd(cryptoParams, Mcurrent, crypto.CopyEncryptedVector(N))
+				multiMasked := crypto.Mask(cryptoParams, multi, k+iT, false)
+				mutex.Lock()
+				result = crypto.CAdd(cryptoParams, crypto.CipherVector{multiMasked}, result)
+				mutex.Unlock()
+			}
+			log.LLvl1("processed row ", iT, "to", iT+vparallelize, "of", len(M), "rows")
+		}(MRow)
+	}
+	wg.Wait()
+
+	return result
+}
+
+// Matrix multiplication between column encrypted matrices
+func CMultMatColTimesColToCol(cryptoParams *crypto.CryptoParams, M, N crypto.CipherMatrix, numRowsM,
+	numThreads int) crypto.CipherMatrix {
+
+	// numRowsM = numInds, numColsN = len(C)
+	log.LLvl1("result size ", numRowsM, "x", len(N))
+	result, _, _, err := crypto.InitEncryptedMatrix(cryptoParams, len(N), numRowsM)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	vparallelize := int(math.Ceil(float64(len(M)) / float64(numThreads)))
+	mutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+
+	for MCol := 0; MCol < len(M); MCol += vparallelize {
+		wg.Add(1)
+		go func(iT int) {
+			defer wg.Done()
+			for k := 0; k < vparallelize && (k+iT < len(M)); k++ {
+				for Ncol := 0; Ncol < len(N); Ncol++ {
+					elemRep := crypto.CMask(cryptoParams, N[Ncol], k+iT, false)
+					elemRepCiph := crypto.InnerSumAll(cryptoParams, elemRep)
+					elemRepNew := make(crypto.CipherVector, len(M[k+iT]))
+					for j := range elemRepNew {
+						elemRepNew[j] = elemRepCiph.CopyNew().Ciphertext()
+					}
+					multi := crypto.CMult(cryptoParams, elemRepNew, M[k+iT])
+					mutex.Lock()
+					result[Ncol] = crypto.CAdd(cryptoParams, multi, result[Ncol])
+					mutex.Unlock()
+				}
+			}
+			log.LLvl1("processed col ", iT, "to", iT+vparallelize, "of", len(M), "cols")
+		}(MCol)
+
+	}
+	wg.Wait()
+
+	return result
+}
+
+// Matrix multiplication between column and row encrypted matrices
+func CMultMatColTimesRowToCol(cryptoParams *crypto.CryptoParams, M, N crypto.CipherMatrix, numRowsM, numColsN,
+	numThreads int) crypto.CipherMatrix {
+
+	// numRowsM = numInds, numColsN = len(C)
+	log.LLvl1("Matrix multiplication, result size ", numRowsM, "x", numColsN)
+	result, _, _, err := crypto.InitEncryptedMatrix(cryptoParams, numColsN, numRowsM)
+	if err != nil {
+		log.Fatal(err)
+	}
+	vparallelize := int(math.Ceil(float64(len(M)) / float64(numThreads)))
+	mutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+
+	for MCol := 0; MCol < len(M); MCol += vparallelize {
+		wg.Add(1)
+		go func(iT int) {
+			defer wg.Done()
+			for k := 0; k < vparallelize && (k+iT < len(M)); k++ {
+				for Ncol := 0; Ncol < len(N); Ncol++ {
+					elemRep := crypto.CMask(cryptoParams, N[k+iT], Ncol, false)
+					elemRepCiph := crypto.InnerSumAll(cryptoParams, elemRep)
+					elemRepNew := make(crypto.CipherVector, len(M[k+iT]))
+					for j := range elemRepNew {
+						elemRepNew[j] = elemRepCiph.CopyNew().Ciphertext()
+					}
+					multi := crypto.CMult(cryptoParams, elemRepNew, M[k+iT])
+					mutex.Lock()
+					result[Ncol] = crypto.CAdd(cryptoParams, multi, result[Ncol])
+					mutex.Unlock()
+				}
+			}
+			log.LLvl1("Processed col ", iT, "to", iT+vparallelize, "of", len(M), "rows")
+		}(MCol)
+	}
+	wg.Wait()
+
+	return result
 }

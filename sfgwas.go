@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/BurntSushi/toml"
-	"github.com/hhcho/sfgwas-private/gwas"
+	"github.com/hhcho/sfgwas/gwas"
 	"github.com/raulk/go-watchdog"
 )
 
