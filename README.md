@@ -114,5 +114,5 @@ Once SF-GWAS finishes, it generates `assoc.txt` in the output directory specifie
 
 ## Contact for questions
 
-David Froelicher, dfroelic@mit.edu
+David Froelicher, dfroelic@mit.edu;
 Hoon Cho, hoon.cho@yale.edu
