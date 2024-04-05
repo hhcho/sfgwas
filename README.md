@@ -4,7 +4,7 @@ Software for secure and federated genome-wide association studies, as described 
 
 **Secure and Federated Genome-Wide Association Studies for Biobank-Scale Datasets**\
 Hyunghoon Cho, David Froelicher, Jeffrey Chen, Manaswitha Edupalli, Apostolos Pyrgelis, Juan R. Troncoso-Pastoriza, Jean-Pierre Hubaux, Bonnie Berger\
-Under review, 2022
+Under review, 2024
 
 This repository provides the code for PCA-based association analysis. For LMM-based GWAS, see [here](https://github.com/hhcho/sfgwas-lmm). We are working on providing both workflows in one package for convenience.
 
@@ -114,4 +114,5 @@ Once SF-GWAS finishes, it generates `assoc.txt` in the output directory specifie
 
 ## Contact for questions
 
-Hoon Cho, hhcho@broadinstitute.org
+David Froelicher, dfroelic@mit.edu
+Hoon Cho, hoon.cho@yale.edu
