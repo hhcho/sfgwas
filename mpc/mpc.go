@@ -109,7 +109,7 @@ func pascalmat(rtype mpc_core.RElem, pow int) mpc_core.RMat {
 	return res
 }
 
-//GetPascalMat retrieves the pascal matrix associated with the given power
+// GetPascalMat retrieves the pascal matrix associated with the given power
 func (mpcObj *MPC) GetPascalMatrix(rtype mpc_core.RElem, pow int) mpc_core.RMat {
 	k := TypedKey{pow, rtype.TypeID()}
 
@@ -884,7 +884,7 @@ func (mpcObj *MPC) LessThanBitsAux(a, b mpc_core.RMat, isPublic bool) mpc_core.R
 	// Compute inner product for each pair of rows
 	fr, fm := mpcObj.BeaverPartitionMat(f)
 	br, bm := mpcObj.BeaverPartitionMat(b)
-	c := mpcObj.BeaverMultElemMat(fr, fm, br, bm).Sum(0)
+	c := mpcObj.BeaverMultElemMat(fr, fm, br, bm, pid == 1).Sum(0)
 	c = mpcObj.BeaverReconstructVec(c)
 
 	return c
@@ -1221,7 +1221,7 @@ func (mpcObj *MPC) BinaryPrefixOr(a mpc_core.RMat, numBits int) mpc_core.RMat {
 			sr, sm := mpcObj.BeaverPartitionMat(move)
 			or, om := mpcObj.BeaverPartitionMat(out)
 
-			mult := mpcObj.BeaverMultElemMat(or, om, sr, sm)
+			mult := mpcObj.BeaverMultElemMat(or, om, sr, sm, pid == 1)
 
 			mult = mpcObj.BeaverReconstructMat(mult)
 
@@ -1345,6 +1345,7 @@ func (mpcObj *MPC) CarryOverPublic(aPub mpc_core.RMat, b mpc_core.RMat, numBits 
 
 func (mpcObj *MPC) SuffixCarryAux(dProp mpc_core.RMat, dGen mpc_core.RMat, numBits int) mpc_core.RMat {
 	rtype := dProp.Type()
+	pid := mpcObj.Network.pid
 
 	// Mask leading bits (set secret bits to 1 for dProp and 0 for dGen)
 	numBitsHead := numBits % mpc_core.BElemBits
@@ -1401,8 +1402,8 @@ func (mpcObj *MPC) SuffixCarryAux(dProp mpc_core.RMat, dGen mpc_core.RMat, numBi
 			dGSr, dGSm := mpcObj.BeaverPartitionMat(dGenMove)
 			dPr, dPm := mpcObj.BeaverPartitionMat(dProp)
 
-			dPropOut := mpcObj.BeaverMultElemMat(dPSr, dPSm, dPr, dPm)
-			dGenOut := mpcObj.BeaverMultElemMat(dGSr, dGSm, dPr, dPm)
+			dPropOut := mpcObj.BeaverMultElemMat(dPSr, dPSm, dPr, dPm, pid == 1)
+			dGenOut := mpcObj.BeaverMultElemMat(dGSr, dGSm, dPr, dPm, pid == 1)
 
 			dPropOut = mpcObj.BeaverReconstructMat(dPropOut)
 			dGenOut = mpcObj.BeaverReconstructMat(dGenOut)
@@ -1561,6 +1562,7 @@ func (mpcObj *MPC) CarryOutAux(dProp mpc_core.RMat, dGen mpc_core.RMat, numBits 
 	// 	fmt.Printf("dpro: %064b%064b%064b%064b (numBits=%d) input\n", mpcObj.RevealSym(dProp[0][chosen]).Uint64(), mpcObj.RevealSym(dProp[1][chosen]).Uint64(), mpcObj.RevealSym(dProp[2][chosen]).Uint64(), mpcObj.RevealSym(dProp[3][chosen]).Uint64(), numBits)
 	// 	fmt.Printf("dgen: %064b%064b%064b%064b (numBits=%d) input\n", mpcObj.RevealSym(dGen[0][chosen]).Uint64(), mpcObj.RevealSym(dGen[1][chosen]).Uint64(), mpcObj.RevealSym(dGen[2][chosen]).Uint64(), mpcObj.RevealSym(dGen[3][chosen]).Uint64(), numBits)
 	// }
+	pid := mpcObj.Network.pid
 
 	if numBits == 1 {
 		rv := dGen[0]
@@ -1601,8 +1603,8 @@ func (mpcObj *MPC) CarryOutAux(dProp mpc_core.RMat, dGen mpc_core.RMat, numBits 
 		dPr, dPm := mpcObj.BeaverPartitionMat(dProp)
 		dGr, dGm := mpcObj.BeaverPartitionMat(dGen)
 
-		dPropOut := mpcObj.BeaverMultElemMat(dPSr, dPSm, dPr, dPm)
-		dGenOut := mpcObj.BeaverMultElemMat(dPSr, dPSm, dGr, dGm)
+		dPropOut := mpcObj.BeaverMultElemMat(dPSr, dPSm, dPr, dPm, pid == 1)
+		dGenOut := mpcObj.BeaverMultElemMat(dPSr, dPSm, dGr, dGm, pid == 1)
 
 		dPropOut = mpcObj.BeaverReconstructMat(dPropOut)
 		dGenOut = mpcObj.BeaverReconstructMat(dGenOut)

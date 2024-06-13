@@ -92,6 +92,7 @@ func (mpcObj *MPC) BeaverReconstructMat(a mpc_core.RMat) mpc_core.RMat {
 }
 
 func (mpcObj *MPC) BeaverMult(ar, am, br, bm mpc_core.RElem) mpc_core.RElem {
+	// this function is not used by sf-relate
 	pid := mpcObj.Network.pid
 	if pid == 0 {
 		return am.Mul(bm)
@@ -106,10 +107,10 @@ func (mpcObj *MPC) BeaverMult(ar, am, br, bm mpc_core.RElem) mpc_core.RElem {
 }
 
 func (mpcObj *MPC) BeaverMultElemVec(ar, am, br, bm mpc_core.RVec) mpc_core.RVec {
-	return mpcObj.BeaverMultElemMat(mpc_core.RMat{ar}, mpc_core.RMat{am}, mpc_core.RMat{br}, mpc_core.RMat{bm})[0]
+	return mpcObj.BeaverMultElemMat(mpc_core.RMat{ar}, mpc_core.RMat{am}, mpc_core.RMat{br}, mpc_core.RMat{bm}, mpcObj.Network.pid == 1)[0]
 }
 
-func (mpcObj *MPC) BeaverMultElemMat(ar, am, br, bm mpc_core.RMat) mpc_core.RMat {
+func (mpcObj *MPC) BeaverMultElemMat(ar, am, br, bm mpc_core.RMat, sending bool) mpc_core.RMat {
 	pid := mpcObj.Network.pid
 	nr, nc := am.Dims()
 
@@ -124,7 +125,8 @@ func (mpcObj *MPC) BeaverMultElemMat(ar, am, br, bm mpc_core.RMat) mpc_core.RMat
 		for j := 0; j < nc; j++ {
 			out[i][j] = out[i][j].Add(ar[i][j].Mul(bm[i][j]))
 			out[i][j] = out[i][j].Add(br[i][j].Mul(am[i][j]))
-			if pid == 1 {
+			// ensure only one party is doing this
+			if sending {
 				out[i][j] = out[i][j].Add(ar[i][j].Mul(br[i][j]))
 			}
 		}

@@ -49,9 +49,10 @@ func (mpcObj *MPC) SSMultElemVec(a, b mpc_core.RVec) mpc_core.RVec {
 }
 
 func (mpcObj *MPC) SSMultElemMat(a, b mpc_core.RMat) mpc_core.RMat {
+	pid := mpcObj.Network.pid
 	ar, am := mpcObj.BeaverPartitionMat(a)
 	br, bm := mpcObj.BeaverPartitionMat(b)
-	x := mpcObj.BeaverMultElemMat(ar, am, br, bm)
+	x := mpcObj.BeaverMultElemMat(ar, am, br, bm, pid == 1)
 	return mpcObj.BeaverReconstructMat(x)
 }
 
