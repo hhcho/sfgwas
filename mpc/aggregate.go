@@ -5,6 +5,7 @@ import (
 
 	"github.com/hhcho/sfgwas/crypto"
 	"github.com/ldsec/lattigo/v2/drlwe"
+	"go.dedis.ch/onet/v3/log"
 
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
@@ -492,6 +493,7 @@ func (netObj *Network) AggregateCMat(cryptoParams *crypto.CryptoParams, mat cryp
 			}
 		}
 	} else {
+		log.LLvl1(mat, netObj.GetHubPid())
 		netObj.SendCipherMatrix(mat, netObj.GetHubPid())
 		out = netObj.ReceiveCipherMatrix(cryptoParams, len(mat), len(mat[0]), netObj.GetHubPid())
 	}

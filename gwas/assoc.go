@@ -950,9 +950,11 @@ func (ast *AssocTest) computeStdInv(varx, vary crypto.CipherVector, nsnps int, f
 	return stdinvx, stdinvy
 }
 
+// LrNewtonBasedCovOnly: Logistic Regression with Newton Method
 func (ast *AssocTest) LrNewtonBasedCovOnly(C crypto.CipherMatrix, y []float64, iter int,
 	numThreads int, numInds []int, approx crypto.IntervalApprox, initWeight float64) crypto.CipherVector {
-	// init weights
+
+	// Initialize weights
 	initClear := make([]float64, ast.general.cps.GetSlots())
 	for i := range initClear {
 		initClear[i] = initWeight
@@ -967,26 +969,23 @@ func (ast *AssocTest) LrNewtonBasedCovOnly(C crypto.CipherMatrix, y []float64, i
 	CscaledUp := crypto.CMultConstMat(ast.general.cps, C, math.Sqrt(float64(totalInds)), false) // scale up to compute Wz
 	CscaledUp = crypto.CMatRescale(ast.general.cps, CscaledUp)
 
+	// Newton Method iterations
 	for i := 0; i < iter; i++ {
 		grad, invHess, _, _, _, _ := ast.computeGradAndInvHessian(C, CscaledUp, y, weights, numThreads, approx, numInds, i == 0, true, i)
 		step := CMultMatInnerProdVector(ast.general.cps, invHess, grad, len(C), numThreads)
-		if ast.general.config.Debug {
-			for party := 1; party <= ast.general.config.NumMainParties; party++ {
-				mpc.SaveMatrixToFileWithPrintIndex(ast.general.cps, ast.general.mpcObj[0], crypto.CipherMatrix{step}, len(C),
-					party, ast.general.CachePath("step_"+strconv.Itoa(i)+".txt"), true, 0, len(C))
-			}
-		}
+
+		mpc.Debug(ast.general.cps, ast.general.mpcObj[0], crypto.CipherMatrix{step}, []int{len(C), len(C)},
+			ast.general.CachePath("step_"+strconv.Itoa(i)+".txt"), ast.general.config.Debug, ast.general.config.NumMainParties)
+
 		weights = crypto.CAdd(ast.general.cps, weights, step)
-		if ast.general.config.Debug {
-			for party := 1; party <= ast.general.config.NumMainParties; party++ {
-				mpc.SaveMatrixToFileWithPrintIndex(ast.general.cps, ast.general.mpcObj[0], crypto.CipherMatrix{weights}, len(C),
-					party, ast.general.CachePath("weights_"+strconv.Itoa(i)+".txt"), true, 0, len(C))
-			}
-		}
+
+		mpc.Debug(ast.general.cps, ast.general.mpcObj[0], crypto.CipherMatrix{weights}, []int{len(C), len(C)},
+			ast.general.CachePath("weights_"+strconv.Itoa(i)+".txt"), ast.general.config.Debug, ast.general.config.NumMainParties)
 	}
 	return weights
 }
 
+// computeGradAndInvHessian implements Algorithm 4 from manuscript (Compute Gradient and Inverse Hessian Matrix)
 func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp crypto.CipherMatrix, y []float64, weights crypto.CipherVector, numThreads int,
 	approx crypto.IntervalApprox, nrowsAll []int, skipIntercept, computeGrad bool, iter int) (crypto.CipherVector,
 	crypto.CipherMatrix, crypto.CipherMatrix, crypto.CipherMatrix, crypto.CipherVector, crypto.CipherVector) {
@@ -996,9 +995,9 @@ func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp 
 		totalnbrInds += v
 	}
 
-	debug := ast.general.config.Debug
 	mutex := sync.Mutex{}
 	cryptoParams := ast.general.cps
+	mpcDefault := ast.general.mpcObj[0]
 
 	timepHatYtilde := time.Now()
 
@@ -1011,19 +1010,17 @@ func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp 
 	}
 
 	var covIntercept crypto.CipherVector
-	if skipIntercept {
+	if skipIntercept { // depends on where in the logistic regression this function is called
 		zeros := make([]float64, len(y))
 		covIntercept, _ = crypto.EncryptFloatVector(cryptoParams, zeros)
 	} else {
 		covIntercept = CMultMatColTimesColToCol(ast.general.cps, C, crypto.CipherMatrix{weights},
-			ast.general.config.NumInds[ast.general.mpcObj[0].GetPid()], numThreads)[0]
+			ast.general.config.NumInds[mpcDefault.GetPid()], numThreads)[0]
 	}
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(cryptoParams, ast.general.mpcObj[0], crypto.CipherMatrix{covIntercept}, nrowsAll[party],
-				party, ast.general.CachePath("covIntercept"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
+
+	mpc.Debug(ast.general.cps, mpcDefault, crypto.CipherMatrix{covIntercept}, nrowsAll,
+		ast.general.CachePath("covIntercept"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
 
 	covInterceptPadded := make(crypto.CipherVector, int(math.Ceil(float64(maxInd)/float64(ast.general.cps.GetSlots()))))
 	for f := range covInterceptPadded {
@@ -1032,60 +1029,48 @@ func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp 
 		} else {
 			covInterceptPadded[f] = covIntercept[0].CopyNew().Ciphertext()
 		}
+	}
 
-	}
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(cryptoParams, ast.general.mpcObj[0], crypto.CipherMatrix{covInterceptPadded}, nrowsAll[party],
-				party, ast.general.CachePath("pHat"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
-	pHatPadded := mpc.CSigmoidApprox(ast.general.mpcObj[0].GetPid(), ast.general.mpcObj[0].Network, cryptoParams, covInterceptPadded,
+	mpc.Debug(ast.general.cps, mpcDefault, crypto.CipherMatrix{covInterceptPadded}, nrowsAll,
+		ast.general.CachePath("pHat"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
+
+	pHatPadded := mpc.CSigmoidApprox(mpcDefault.GetPid(), mpcDefault.Network, cryptoParams, covInterceptPadded,
 		approx, &mutex) // n x 1
 
 	pHat := pHatPadded[:len(covIntercept)]
-	pHat = ast.general.mpcObj[0].Network.BootstrapMatAll(cryptoParams, crypto.CipherMatrix{pHat})[0]
+	pHat = mpcDefault.Network.BootstrapMatAll(cryptoParams, crypto.CipherMatrix{pHat})[0]
 
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(cryptoParams, ast.general.mpcObj[0], crypto.CipherMatrix{pHat}, nrowsAll[party],
-				party, ast.general.CachePath("pHat"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
+	mpc.Debug(ast.general.cps, mpcDefault, crypto.CipherMatrix{pHat}, nrowsAll,
+		ast.general.CachePath("pHat"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
 
 	log.LLvl1("Computing yTilde")
 	yEncoded, _ := crypto.EncodeFloatVector(cryptoParams, y)  // n x 1
 	yTilde := crypto.CPSubOther(cryptoParams, yEncoded, pHat) // n x 1
 
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(ast.general.cps, ast.general.mpcObj[0], crypto.CipherMatrix{yTilde}, nrowsAll[party],
-				party, ast.general.CachePath("yTilde"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
+	mpc.Debug(ast.general.cps, mpcDefault, crypto.CipherMatrix{yTilde}, nrowsAll,
+		ast.general.CachePath("yTilde"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
+
 	var grad crypto.CipherVector // r in manuscript, grad in code
 	if computeGrad {
-		grad = CMultMatInnerProdVector(cryptoParams, C, yTilde, ast.general.config.NumInds[ast.general.mpcObj[0].GetPid()], numThreads)
-		grad = ast.general.mpcObj[0].Network.AggregateCVec(cryptoParams, grad)
-		if debug {
-			for party := 1; party <= ast.general.config.NumMainParties; party++ {
-				SaveMatrixToFile(cryptoParams, ast.general.mpcObj[0], crypto.CipherMatrix{grad}, len(C),
-					party, ast.general.CachePath("grad"+strconv.Itoa(iter)+".txt"))
-			}
-		}
+		grad = CMultMatInnerProdVector(cryptoParams, C, yTilde, ast.general.config.NumInds[mpcDefault.GetPid()], numThreads)
+		grad = mpcDefault.Network.AggregateCVec(cryptoParams, grad)
+		mpc.Debug(ast.general.cps, mpcDefault, crypto.CipherMatrix{yTilde}, []int{len(C), len(C)},
+			ast.general.CachePath("grad"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+			ast.general.config.NumMainParties)
 	}
 
 	log.LLvl1("Computing w") // Diagonal of R in manuscript, w in code
 	pHatSquare := crypto.CMult(cryptoParams, pHat, pHat)
 
 	w := crypto.CSub(cryptoParams, pHat, pHatSquare)
-	w = ast.general.mpcObj[0].Network.BootstrapMatAll(cryptoParams, crypto.CipherMatrix{w})[0]
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			SaveMatrixToFile(cryptoParams, ast.general.mpcObj[0], crypto.CipherMatrix{w}, nrowsAll[party],
-				party, ast.general.CachePath("w"+strconv.Itoa(iter)+".txt"))
-		}
-	}
+	w = mpcDefault.Network.BootstrapMatAll(cryptoParams, crypto.CipherMatrix{w})[0]
+
+	mpc.Debug(ast.general.cps, mpcDefault, crypto.CipherMatrix{w}, nrowsAll,
+		ast.general.CachePath("w"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
 
 	log.LLvl1("Time to compute u and yTilde: ", time.Since(timepHatYtilde))
 
@@ -1097,12 +1082,10 @@ func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp 
 	for i := 0; i < len(C); i++ {
 		Wz[i] = crypto.CMult(cryptoParams, w, CScaledUp[i]) // Wz is scaled up
 	}
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			SaveMatrixToFile(cryptoParams, ast.general.mpcObj[0], Wz, nrowsAll[party],
-				party, ast.general.CachePath("Wz"+strconv.Itoa(iter)+".txt"))
-		}
-	}
+	mpc.Debug(ast.general.cps, mpcDefault, Wz, nrowsAll,
+		ast.general.CachePath("Wz"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
+
 	log.LLvl1("Time to compute Wz: ", time.Since(timeWz))
 	timeZTwZInv := time.Now()
 
@@ -1110,34 +1093,29 @@ func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp 
 	log.LLvl1("Computing W ")                                  // W in manuscript, ZTwZInv in code
 	ZTwZ := CMultMatInnerProd(cryptoParams, C, Wz, numThreads) // C = ZT row-wise encrypted, result is row-wise, #cov x #cov
 	// compute (ZTwZ)^(-1)
-	ZTwZ = ast.general.mpcObj[0].Network.AggregateCMat(cryptoParams, ZTwZ)
+	ZTwZ = mpcDefault.Network.AggregateCMat(cryptoParams, ZTwZ)
 
-	ZTwZ = ast.general.mpcObj[0].Network.CollectiveBootstrapMat(cryptoParams, ZTwZ, -1)
+	ZTwZ = mpcDefault.Network.CollectiveBootstrapMat(cryptoParams, ZTwZ, -1)
 
-	// TODO include scaling factor as a parameter
 	ZTwZ = crypto.CMultConstMat(cryptoParams, ZTwZ, 1.0/(float64(totalnbrInds)/ast.general.config.InverseMatScale), false) // unscale from scale Wz
 	ZTwZ = crypto.CMatRescale(cryptoParams, ZTwZ)
 
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(cryptoParams, ast.general.mpcObj[0], ZTwZ, len(C),
-				party, ast.general.CachePath("ZTwZ"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
+	mpc.Debug(ast.general.cps, mpcDefault, ZTwZ, []int{len(C), len(C)},
+		ast.general.CachePath("ZTwZ"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
 
 	log.LLvl1("Computing inverse of W using SS")
-
-	ZTwZSS := ast.general.mpcObj[0].CMatToSS(cryptoParams, ast.general.mpcObj[0].GetRType(), ZTwZ, -1, len(ZTwZ), 1, len(C))
+	ZTwZSS := mpcDefault.CMatToSS(cryptoParams, mpcDefault.GetRType(), ZTwZ, -1, len(ZTwZ), 1, len(C))
 
 	log.LLvl1("converted W to SS, getting BT such as BTB = inverse(ZTwZ)")
-	BSS := ast.general.mpcObj[0].MatrixInverseSqrtSVD(ZTwZSS)
-	BT := ast.general.mpcObj[0].SSToCMat(cryptoParams, BSS.Transpose())
+	BSS := mpcDefault.MatrixInverseSqrtSVD(ZTwZSS)
+	BT := mpcDefault.SSToCMat(cryptoParams, BSS.Transpose())
 
 	// scale back such that BTB ends up unscaled
 	BT = crypto.CMultConstMat(cryptoParams, BT, math.Sqrt((ast.general.config.InverseMatScale*2)/math.Sqrt(float64(totalnbrInds))), false)
 	BT = crypto.CMatRescale(cryptoParams, BT)
 
-	// TODO check if can be removed
+	// Mask remaining values
 	maskClear := make([]float64, ast.general.cps.GetSlots())
 	for i := 0; i < len(C); i++ {
 		maskClear[i] = 1
@@ -1149,20 +1127,16 @@ func (ast *AssocTest) computeGradAndInvHessian(C crypto.CipherMatrix, CScaledUp 
 
 	ZTwZInv = CMultMatInnerProd(cryptoParams, BT, crypto.CopyEncryptedMatrix(BT), numThreads)
 
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(cryptoParams, ast.general.mpcObj[0], ZTwZInv, len(C),
-				party, ast.general.CachePath("ZTwZInv"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
+	mpc.Debug(ast.general.cps, mpcDefault, ZTwZInv, []int{len(C), len(C)},
+		ast.general.CachePath("ZTwZInv"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
+
 	log.LLvl1("Time to compute ZTwZInv: ", time.Since(timeZTwZInv))
 
-	if debug {
-		for party := 1; party <= ast.general.config.NumMainParties; party++ {
-			mpc.SaveMatrixToFileWithPrint(cryptoParams, ast.general.mpcObj[0], BT, len(C),
-				party, ast.general.CachePath("ZTwZInvNew"+strconv.Itoa(iter)+".txt"), true)
-		}
-	}
+	mpc.Debug(ast.general.cps, mpcDefault, BT, []int{len(C), len(C)},
+		ast.general.CachePath("ZTwZInvNew"+strconv.Itoa(iter)+".txt"), ast.general.config.Debug,
+		ast.general.config.NumMainParties)
+
 	log.LLvl1("Time to compute ZTwZInvNew: ", time.Since(timeZTwZInv))
 
 	return grad, ZTwZInv, BT, Wz, yTilde, w

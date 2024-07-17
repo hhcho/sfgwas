@@ -227,24 +227,24 @@ func InitializeGWASProtocol(config *Config, pid int, mpcOnly bool) (gwasProt *Pr
 		file, err := os.Open(config.GenoBlockSizeFile)
 
 		if err != nil {
-			log.Fatalf("failed to open:", config.GenoBlockSizeFile)
+			log.Fatal("failed to open:", config.GenoBlockSizeFile)
 		}
 		scanner := bufio.NewScanner(file)
 		scanner.Split(bufio.ScanLines)
 
 		for i := 0; i < config.GenoNumBlocks; i++ {
 			if !scanner.Scan() {
-				log.Fatalf("not enough lines in", config.GenoBlockSizeFile)
+				log.Fatal("not enough lines in", config.GenoBlockSizeFile)
 			}
 
 			genoBlockSizes[i], err = strconv.Atoi(scanner.Text())
 			if err != nil {
-				log.Fatalf("parse error:", config.GenoBlockSizeFile)
+				log.Fatal("parse error:", config.GenoBlockSizeFile)
 			}
 		}
 
 		if scanner.Scan() {
-			log.Fatalf("too many lines in", config.GenoBlockSizeFile)
+			log.Fatal("too many lines in", config.GenoBlockSizeFile)
 		}
 
 		file.Close()

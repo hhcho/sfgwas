@@ -4,7 +4,7 @@ LOG_PREFIX=stdout
 for (( i = 0; i <= $NUM_MAIN_PARTY; i++ )) 
 do
   echo "Running PID=$i"
-  CMD="PID=$i go test -run gwas/TestMicroBenchmark | tee /dev/tty > ${LOG_PREFIX}_party${i}.txt"
+  CMD="PID=$i go test -run TestMicroBenchmark | tee /dev/tty > ${LOG_PREFIX}_party${i}.txt"
   if [ $i = $NUM_MAIN_PARTY ]; then
     eval $CMD
   else
