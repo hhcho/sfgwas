@@ -1,0 +1,12 @@
+W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
+Initializing network for thread:  0
+Connection failed. Error: dial tcp 10.128.0.26:8010: connect: connection refused
+Retrying in... 5s
+Successfully connected to 10.128.0.26:8010
+Connected to socket, listening to party 0
+Opening socket on:  0.0.0.0:8060
+Successfully opened channel at port 8060
+Check port: opened and listening to party 2
+Network for thread 0 complete. 1!: random.go:41 (mpc.InitializePRG)         - Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).
+1!: mhe.go:25 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit started
+1!: mhe.go:61 (mpc.ParallelNetworks.CollectiveInit) - PubKeyGen

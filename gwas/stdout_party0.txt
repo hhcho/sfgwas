@@ -1,5 +1,0 @@
-W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
-Initializing network for thread:  0
-Opening socket on:  0.0.0.0:8010
-signal: interrupt
-FAIL	github.com/hhcho/sfgwas/gwas	136.986s

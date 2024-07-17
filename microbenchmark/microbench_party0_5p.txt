@@ -1,0 +1,498 @@
+W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
+Initializing network for thread:  0
+Opening socket on:  0.0.0.0:8010
+Successfully opened channel at port 8010
+Check port: opened and listening to party 1
+Opening socket on:  0.0.0.0:8020
+Successfully opened channel at port 8020
+Check port: opened and listening to party 2
+Opening socket on:  0.0.0.0:8030
+Successfully opened channel at port 8030
+Check port: opened and listening to party 3
+Opening socket on:  0.0.0.0:8040
+Successfully opened channel at port 8040
+Check port: opened and listening to party 4
+Opening socket on:  0.0.0.0:8050
+Successfully opened channel at port 8050
+Check port: opened and listening to party 5
+Network for thread 0 complete. 1!: random.go:41 (mpc.InitializePRG)         - Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).
+1!: mhe.go:25 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit started
+1!: mhe.go:61 (mpc.ParallelNetworks.CollectiveInit) - PubKeyGen
+1!: mhe.go:64 (mpc.ParallelNetworks.CollectiveInit) - RelinKeyGen
+Pi 256
+1!: mhe.go:71 (mpc.ParallelNetworks.CollectiveInit) - RotKeyGen: shifts <= 20 and powers of two up to 8192
+1!: mhe.go:78 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit finished
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+8 bytes to party 5
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Decryption time:  391ns
+Network log for party 0
+8 bytes to party 3
+8 bytes to party 4
+8 bytes to party 5
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Bootstrapping time:  476ns
+Network log for party 0
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+8 bytes to party 5
+16 bytes to party 1
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Aggregation time:  427ns
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+8 bytes to party 5
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Sigmoid time:  1.114µs
+Network log for party 0
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+8 bytes to party 5
+16 bytes to party 1
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Switch to MPC time:  526.596µs
+Network log for party 0
+44892688 bytes to party 5
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Inverse sqrt time:  9.007788495s
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:09Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+40174024 bytes to party 5
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:18Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:26Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:34Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:42Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:50Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:32:58Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:33:06Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:33:14Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T09:33:22Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Divide time:  7.366376414s
+Network log for party 0
+8 bytes to party 4
+2424920 bytes to party 5
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Compare time:  659.628244ms
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+Network log for party 0
+8 bytes to party 3
+8 bytes to party 4
+21201868 bytes to party 5
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  EigenDecomp time:  1m50.037353893s
+Network log for party 0
+8 bytes to party 4
+8204 bytes to party 5
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Matrix mult time:  7.732001ms
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+21376316 bytes to party 5
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+--- FAIL: TestMicroBenchmark (5194.21s)
+panic: read tcp 10.128.0.2:8010->10.128.0.5:50952: read: connection reset by peer [recovered]
+	panic: read tcp 10.128.0.2:8010->10.128.0.5:50952: read: connection reset by peer
+
+goroutine 6 [running]:
+testing.tRunner.func1.2({0x69d6c0, 0xc00fa43b80})
+	/usr/local/go/src/testing/testing.go:1545 +0x238
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1548 +0x397
+panic({0x69d6c0?, 0xc00fa43b80?})
+	/usr/local/go/src/runtime/panic.go:914 +0x21f
+github.com/hhcho/sfgwas/mpc.ReadFull(0xc0342436b0, {0xc02c7ceb18, 0x8, 0x8})
+	/home/dfroelic/sfgwas/mpc/netconnect.go:268 +0xd3
+github.com/hhcho/sfgwas/mpc.(*Network).ReceiveInt(0xc00011d880, 0xa07d421b128d0396?)
+	/home/dfroelic/sfgwas/mpc/sendrecieve.go:209 +0x71
+github.com/hhcho/sfgwas/mpc.(*MPC).AssertSync(0xc00007a6c0)
+	/home/dfroelic/sfgwas/mpc/mpc.go:160 +0x1a5
+github.com/hhcho/sfgwas/gwas.TestMicroBenchmark.func21()
+	/home/dfroelic/sfgwas/gwas/microBenchmark_test.go:277 +0x1a5
+github.com/hhcho/sfgwas/gwas.TestMicroBenchmark.func1(0xc034263df0, {0x6eb3b7, 0x1c})
+	/home/dfroelic/sfgwas/gwas/microBenchmark_test.go:72 +0x163
+github.com/hhcho/sfgwas/gwas.TestMicroBenchmark(0x0?)
+	/home/dfroelic/sfgwas/gwas/microBenchmark_test.go:255 +0x1668
+testing.tRunner(0xc00013eea0, 0x7104a8)
+	/usr/local/go/src/testing/testing.go:1595 +0xff
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:1648 +0x3ad
+exit status 2
+FAIL	github.com/hhcho/sfgwas/gwas	5194.309s

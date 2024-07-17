@@ -1,0 +1,77 @@
+W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
+Initializing network for thread:  0
+Opening socket on:  0.0.0.0:8010
+Successfully opened channel at port 8010
+Check port: opened and listening to party 1
+Opening socket on:  0.0.0.0:8020
+Successfully opened channel at port 8020
+Check port: opened and listening to party 2
+Network for thread 0 complete. 1!: random.go:41 (mpc.InitializePRG)         - Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).
+1!: mhe.go:25 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit started
+1!: mhe.go:61 (mpc.ParallelNetworks.CollectiveInit) - PubKeyGen
+1!: mhe.go:64 (mpc.ParallelNetworks.CollectiveInit) - RelinKeyGen
+Pi 256
+1!: mhe.go:71 (mpc.ParallelNetworks.CollectiveInit) - RotKeyGen: shifts <= 20 and powers of two up to 8192
+1!: mhe.go:78 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit finished
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Decryption time:  415ns
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Bootstrapping time:  405ns
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 2
+8 bytes from party 1
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Aggregation time:  453ns
+Network log for party 0
+8 bytes to party 2
+16 bytes to party 1
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Sigmoid time:  1.418µs
+Network log for party 0
+8 bytes to party 2
+16 bytes to party 1
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Switch to MPC time:  397.57µs
+Network log for party 0
+16 bytes to party 1
+44892688 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Inverse sqrt time:  19.972644163s
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:01:15Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+Network log for party 0
+16 bytes to party 1
+40174024 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:01:34Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:01:52Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:02:11Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:02:29Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:02:47Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:03:05Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:03:23Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:03:41Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T14:03:59Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Divide time:  14.37970386s
+Network log for party 0
+16 bytes to party 1
+2424920 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Compare time:  266.781048ms
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue

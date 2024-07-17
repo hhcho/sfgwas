@@ -1,0 +1,133 @@
+W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
+Initializing network for thread:  0
+Opening socket on:  0.0.0.0:8010
+Successfully opened channel at port 8010
+Check port: opened and listening to party 1
+Opening socket on:  0.0.0.0:8020
+Successfully opened channel at port 8020
+Check port: opened and listening to party 2
+Network for thread 0 complete. 1!: random.go:41 (mpc.InitializePRG)         - Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).
+1!: mhe.go:25 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit started
+1!: mhe.go:61 (mpc.ParallelNetworks.CollectiveInit) - PubKeyGen
+1!: mhe.go:64 (mpc.ParallelNetworks.CollectiveInit) - RelinKeyGen
+Pi 256
+1!: mhe.go:71 (mpc.ParallelNetworks.CollectiveInit) - RotKeyGen: shifts <= 20 and powers of two up to 8192
+1!: mhe.go:78 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit finished
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Decryption time:  551ns
+Network log for party 0
+8 bytes to party 2
+16 bytes to party 1
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Bootstrapping time:  505ns
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Aggregation time:  516ns
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Sigmoid time:  2.125µs
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 2
+8 bytes from party 1
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Switch to MPC time:  447.933µs
+Network log for party 0
+16 bytes to party 1
+44892688 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Inverse sqrt time:  19.753332065s
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:20:04Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+Network log for party 0
+16 bytes to party 1
+40174024 bytes to party 2
+8 bytes from party 2
+8 bytes from party 1
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:20:23Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:20:41Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:20:59Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:21:17Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:21:35Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:21:53Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:22:13Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:22:33Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: mpc.go:2083 (mpc.(*MPC).Divide)          - 2024-07-16T21:22:53Z MPC Divide called (n = 8192) divSqrtMaxLen 10000
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Divide time:  14.972623643s
+Network log for party 0
+16 bytes to party 1
+2424920 bytes to party 2
+8 bytes from party 1
+8 bytes from party 2
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Compare time:  430.898186ms
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: microBenchmark_test.go:237 (gwas.TestMicroBenchmark) - Eigendecomp:  2h29m46.79594919s
+Network log for party 0
+0 bytes to party 1
+21201860 bytes to party 2
+0 bytes from party 2
+0 bytes from party 1
+1!: microBenchmark_test.go:253 (gwas.TestMicroBenchmark) - Matrix mult time:  5.359425ms
+Network log for party 0
+0 bytes to party 1
+8196 bytes to party 2
+0 bytes from party 1
+0 bytes from party 2
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+1!: microBenchmark_test.go:286 (gwas.TestMicroBenchmark) - MatrixInverseSqrtSVD time:  2h42m32.884455768s
+Network log for party 0
+0 bytes to party 1
+21328692 bytes to party 2
+0 bytes from party 1
+0 bytes from party 2
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 2
+8 bytes from party 1
+1!: microBenchmark_test.go:79 (gwas.TestMicroBenchmark.func1) - 0  Switch back to MHE time:  4.64µs
+PASS
+ok  	github.com/hhcho/sfgwas/gwas	39111.053s

@@ -1,0 +1,83 @@
+W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
+Initializing network for thread:  0
+Opening socket on:  0.0.0.0:8010
+Successfully opened channel at port 8010
+Check port: opened and listening to party 1
+Opening socket on:  0.0.0.0:8020
+Successfully opened channel at port 8020
+Check port: opened and listening to party 2
+Opening socket on:  0.0.0.0:8030
+Successfully opened channel at port 8030
+Check port: opened and listening to party 3
+Opening socket on:  0.0.0.0:8040
+Successfully opened channel at port 8040
+Check port: opened and listening to party 4
+Opening socket on:  0.0.0.0:8050
+Successfully opened channel at port 8050
+Check port: opened and listening to party 5
+Network for thread 0 complete. 1!: random.go:41 (mpc.InitializePRG)         - Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).
+1!: mhe.go:25 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit started
+1!: mhe.go:61 (mpc.ParallelNetworks.CollectiveInit) - PubKeyGen
+1!: mhe.go:64 (mpc.ParallelNetworks.CollectiveInit) - RelinKeyGen
+Pi 256
+1!: mhe.go:71 (mpc.ParallelNetworks.CollectiveInit) - RotKeyGen: shifts <= 20 and powers of two up to 8192
+1!: mhe.go:78 (mpc.ParallelNetworks.CollectiveInit) - CollectiveInit finished
+Network log for party 0
+16 bytes to party 1
+8 bytes to party 2
+8 bytes to party 3
+8 bytes to party 4
+8 bytes to party 5
+8 bytes from party 4
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+1!: microBenchmark_test.go:78 (gwas.TestMicroBenchmark.func1) - 0  Switch to MPC time:  557.672µs
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done
+Network log for party 0
+8 bytes to party 3
+8 bytes to party 4
+21376316 bytes to party 5
+16 bytes to party 1
+8 bytes to party 2
+8 bytes from party 5
+8 bytes from party 1
+8 bytes from party 2
+8 bytes from party 3
+8 bytes from party 4
+1!: mpc.go:2871 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp start
+EigenDecomp: 15-th eigenvalue
+EigenDecomp: 14-th eigenvalue
+EigenDecomp: 13-th eigenvalue
+EigenDecomp: 12-th eigenvalue
+EigenDecomp: 11-th eigenvalue
+EigenDecomp: 10-th eigenvalue
+EigenDecomp: 9-th eigenvalue
+EigenDecomp: 8-th eigenvalue
+EigenDecomp: 7-th eigenvalue
+EigenDecomp: 6-th eigenvalue
+EigenDecomp: 5-th eigenvalue
+EigenDecomp: 4-th eigenvalue
+EigenDecomp: 3-th eigenvalue
+EigenDecomp: 2-th eigenvalue
+EigenDecomp: 1-th eigenvalue
+EigenDecomp: complete
+1!: mpc.go:2873 (mpc.(*MPC).MatrixInverseSqrtSVD) - EigenDecomp done

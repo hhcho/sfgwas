@@ -1,6 +1,0 @@
-W : constants.go:17 (lib.init.0)             - Couldn't parse CONN_TIMEOUT, using default value:  10m0s
-Initializing network for thread:  0
-Connection failed. Error: dial tcp 10.128.0.2:8010: connect: operation timed out
-Retrying in... 5s
-signal: interrupt
-FAIL	github.com/hhcho/sfgwas/gwas	136.986s
