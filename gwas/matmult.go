@@ -1750,13 +1750,11 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 	slots := cryptoParams.GetSlots()
 	d := int(math.Ceil(math.Sqrt(float64(slots))))
 	nproc := runtime.GOMAXPROCS(0)
-	log.LLvl1("CPMatMult4V2CachedBParallel, nproc", nproc)
 
 	if A[0][0].Level() > maxLevel {
-		log.LLvl1("Dropping level. Input:", A[0][0].Level())
+		//log.LLvl1("Dropping level. Input:", A[0][0].Level())
 		A = crypto.DropLevel(cryptoParams, A, maxLevel)
 	}
-	log.LLvl1("CPMatMult4V2CachedBParallel, A level", A[0][0].Level())
 
 	out := make(crypto.CipherMatrix, s)
 	outScale := A[0][0].Scale() * cryptoParams.Params.Scale()
@@ -1811,7 +1809,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 
 			// Workers
 			var workerGroup sync.WaitGroup
-			log.LLvl1("Block row", bi+1, "/", len(CachedB), "generating rotation cache")
 			for thread := 0; thread < nproc; thread++ {
 				workerGroup.Add(1)
 				go func(thread int) {
@@ -1897,7 +1894,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 		}()
 
 		var wg sync.WaitGroup
-		log.LLvl1("postprocessing accumulators")
 		for thread := 0; thread < nproc; thread++ {
 			wg.Add(1)
 			go func(thread int) {
@@ -1907,7 +1903,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 
 				for l := range jobChannels[thread] {
 					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
-					log.LLvl1(l, "modular reduction")
 
 					if l > 0 { // Giant step alignment
 						for j := range cv {
@@ -1926,7 +1921,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 
 		var aggGroup sync.WaitGroup
 		aggGroup.Add(1)
-		log.LLvl1("aggregating results")
 		go func() {
 			defer aggGroup.Done()
 
