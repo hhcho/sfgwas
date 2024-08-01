@@ -1741,7 +1741,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 	}
 
 	for i := range A {
-
 		accCache := make([]CipherVectorAccV2, d) // Cache each of the sqrt(slots) groups
 		accCacheMux := make([]sync.Mutex, d)
 		var veclen int
@@ -1875,21 +1874,20 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 				defer wg.Done()
 
 				//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
-				cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
-					for l := range jobChannels[thread] {
-						cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
 
+				for l := range jobChannels[thread] {
+					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
+					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
 						if l > 0 { // Giant step alignment
 							for j := range cv {
 								cv[j] = crypto.RotateRightWithEvaluator(cryptoParams, cv[j], -l*d, eval)
 							}
 						}
+						return nil
+					})
 
-						aggChannel <- cv
-					}
-					return nil
-				})
-
+					aggChannel <- cv
+				}
 			}(thread)
 		}
 
