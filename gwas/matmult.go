@@ -1818,13 +1818,15 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 					defer workerGroup.Done()
 
 					//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
-					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
-						for baby := range rotJobChannels[thread] {
-							// No need for a nil check since we know each `baby` value is submitted only once`
+
+					for baby := range rotJobChannels[thread] {
+						// No need for a nil check since we know each `baby` value is submitted only once`
+						cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
 							rotCache[baby] = crypto.RotateRightWithEvaluator(cryptoParams, A[i][bi], -baby, eval)
-						}
-						return nil
-					})
+							return nil
+						})
+					}
+
 				}(thread)
 			}
 			workerGroup.Wait()
@@ -1904,18 +1906,19 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 				//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
 
 				for l := range jobChannels[thread] {
-					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
-						cv := ModularReduceV2WithEval(cryptoParams, accCache[l], outScale, eval)
-						log.LLvl1(l, "modular reduction")
+					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
+					log.LLvl1(l, "modular reduction")
 
-						if l > 0 { // Giant step alignment
-							for j := range cv {
+					if l > 0 { // Giant step alignment
+						for j := range cv {
+							cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
 								cv[j] = crypto.RotateRightWithEvaluator(cryptoParams, cv[j], -l*d, eval)
-							}
+								return nil
+							})
 						}
-						aggChannel <- cv
-						return nil
-					})
+					}
+					aggChannel <- cv
+
 				}
 
 			}(thread)
@@ -1928,15 +1931,15 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 			defer aggGroup.Done()
 
 			//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
-			cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
-				for cv := range aggChannel {
-					for j := range cv {
-						eval.Add(out[i][j], cv[j], out[i][j])
-					}
-				}
-				return nil
-			})
 
+			for cv := range aggChannel {
+				for j := range cv {
+					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+						eval.Add(out[i][j], cv[j], out[i][j])
+						return nil
+					})
+				}
+			}
 		}()
 
 		wg.Wait()
