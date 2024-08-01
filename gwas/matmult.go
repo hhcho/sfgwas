@@ -1724,8 +1724,6 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 	s := len(A)
 	slots := cryptoParams.GetSlots()
 	d := int(math.Ceil(math.Sqrt(float64(slots))))
-	//fmt.Println("slots", slots, "d", d)
-	//fmt.Println("brows", len(CachedB))
 	nproc := runtime.GOMAXPROCS(0)
 
 	if A[0][0].Level() > maxLevel {
@@ -1793,12 +1791,14 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 				go func(thread int) {
 					defer workerGroup.Done()
 
-					eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
-
-					for baby := range rotJobChannels[thread] {
-						// No need for a nil check since we know each `baby` value is submitted only once`
-						rotCache[baby] = crypto.RotateRightWithEvaluator(cryptoParams, A[i][bi], -baby, eva)
-					}
+					//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+						for baby := range rotJobChannels[thread] {
+							// No need for a nil check since we know each `baby` value is submitted only once`
+							rotCache[baby] = crypto.RotateRightWithEvaluator(cryptoParams, A[i][bi], -baby, eval)
+						}
+						return nil
+					})
 				}(thread)
 			}
 			workerGroup.Wait()
@@ -1874,19 +1874,22 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 			go func(thread int) {
 				defer wg.Done()
 
-				eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+				//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+				cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+					for l := range jobChannels[thread] {
+						cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
 
-				for l := range jobChannels[thread] {
-					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
-
-					if l > 0 { // Giant step alignment
-						for j := range cv {
-							cv[j] = crypto.RotateRightWithEvaluator(cryptoParams, cv[j], -l*d, eva)
+						if l > 0 { // Giant step alignment
+							for j := range cv {
+								cv[j] = crypto.RotateRightWithEvaluator(cryptoParams, cv[j], -l*d, eval)
+							}
 						}
-					}
 
-					aggChannel <- cv
-				}
+						aggChannel <- cv
+					}
+					return nil
+				})
+
 			}(thread)
 		}
 
@@ -1895,13 +1898,16 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 		go func() {
 			defer aggGroup.Done()
 
-			eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
-
-			for cv := range aggChannel {
-				for j := range cv {
-					eva.Add(out[i][j], cv[j], out[i][j])
+			//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
+			cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+				for cv := range aggChannel {
+					for j := range cv {
+						eval.Add(out[i][j], cv[j], out[i][j])
+					}
 				}
-			}
+				return nil
+			})
+
 		}()
 
 		wg.Wait()
