@@ -21,29 +21,29 @@ func TestMicroBenchmark(t *testing.T) {
 	// set MPC parameters and 3 nodes, default parameters
 	servers := map[string]mpc.Server{}
 	servers["party0"] = mpc.Server{
-		IpAddr: "10.128.0.26", //"10.128.0.2", //"127.0.0.1",
+		IpAddr: "127.0.0.1",
 		Ports:  map[string]string{"party1": "8010", "party2": "8020", "party3": "8030", "party4": "8040", "party5": "8050"},
 	}
 	servers["party1"] = mpc.Server{
-		IpAddr: "10.128.0.5", //"10.128.0.5", //"127.0.0.1",
+		IpAddr: "127.0.0.1",
 		Ports:  map[string]string{"party2": "8060", "party3": "8070", "party4": "8080", "party5": "8090"},
 	}
 	servers["party2"] = mpc.Server{
-		IpAddr: "10.154.0.2", //"10.128.0.10", //"127.0.0.1",
+		IpAddr: "127.0.0.1",
 		Ports:  map[string]string{"party3": "8100", "party4": "8110", "party5": "8120"},
 	}
-	/*servers["party3"] = mpc.Server{
-		IpAddr: "10.128.0.15",
+	servers["party3"] = mpc.Server{
+		IpAddr: "127.0.0.1",
 		Ports:  map[string]string{"party4": "8130", "party5": "8140"},
 	}
 	servers["party4"] = mpc.Server{
-		IpAddr: "10.128.0.20",
+		IpAddr: "127.0.0.1",
 		Ports:  map[string]string{"party5": "8150"},
 	}
 	servers["party5"] = mpc.Server{
-		IpAddr: "10.128.0.21",
+		IpAddr: "127.0.0.1",
 		Ports:  map[string]string{},
-	}*/
+	}
 
 	networks := mpc.ParallelNetworks(mpc.InitCommunication("0.0.0.0", servers, pid, 3, 1, ""))
 	mpcEnv := mpc.InitParallelMPCEnv(networks, mpc_core.LElem256Zero, 60, 30)
@@ -77,8 +77,8 @@ func TestMicroBenchmark(t *testing.T) {
 			totalDuration += operation()
 			if i == 0 {
 				networks.PrintNetworkLog()
-				networks.ResetNetworkLog()
 			}
+			networks.ResetNetworkLog()
 		}
 		avgDuration := totalDuration / 10
 		log.LLvl1(pid, label, avgDuration)
@@ -131,6 +131,7 @@ func TestMicroBenchmark(t *testing.T) {
 
 		benchmark(func() time.Duration {
 			timeBef := time.Now()
+			_ = crypto.InnerSumAll(cps, encryptedVector)
 			_ = crypto.CMultScalar(cps, encryptedVector, encryptedVector[0])
 			return time.Since(timeBef)
 		}, " Multiplication with scalar time: ")
@@ -231,10 +232,21 @@ func TestMicroBenchmark(t *testing.T) {
 	}, " Compare time: ")
 	mpcEnv[0].AssertSync()
 
+	// mult
+
+	benchmark(func() time.Duration {
+		timeBef := time.Now()
+		_ = mpcEnv[0].SSMultElemVec(encryptedVectorSS, encryptedVectorSS)
+		mpcEnv[0].TruncVec(encryptedVectorSS, mpcEnv[0].GetDataBits(), mpcEnv[0].GetFracBits())
+		timeFunc := time.Since(timeBef)
+		mpcEnv[0].AssertSync()
+		return timeFunc
+	}, " Vector Elem Mult time: ")
+	mpcEnv[0].AssertSync()
+
 	rMat := mpc_core.InitRMat(encryptedVectorSS.Type().Zero(), 16, 16)
 
 	// eigen decomposition
-	//benchmark(func() time.Duration {
 	networks.ResetNetworkLog()
 	timeBef := time.Now()
 	_, _ = mpcEnv[0].EigenDecomp(rMat)
@@ -242,36 +254,25 @@ func TestMicroBenchmark(t *testing.T) {
 	log.LLvl1("Eigendecomp: ", timeFunc)
 	networks.PrintNetworkLog()
 	mpcEnv[0].AssertSync()
-	//	return timeFunc
-	//}, " EigenDecomp time: ")
-	//mpcEnv[0].AssertSync()
 
 	// matrix multiplication
 	networks.ResetNetworkLog()
-	//benchmark(func() time.Duration {
-	timeBef = time.Now()
-	Vtr, Vtm := mpcEnv[0].BeaverPartitionMat(rMat)
-	Lr, Lm := mpcEnv[0].BeaverPartitionMat(rMat)
-	tempRes := mpcEnv[0].BeaverMultMat(Vtr, Vtm, Lr, Lm)
-	_ = mpcEnv[0].BeaverReconstructMat(tempRes)
-	timeFunc = time.Since(timeBef)
-	log.LLvl1("Matrix mult time: ", timeFunc)
-	networks.PrintNetworkLog()
-	mpcEnv[0].AssertSync()
-	//	return timeFunc
-	//}, " Matrix mult time: ")
+	benchmark(func() time.Duration {
+		timeBef = time.Now()
+		Vtr, Vtm := mpcEnv[0].BeaverPartitionMat(rMat)
+		Lr, Lm := mpcEnv[0].BeaverPartitionMat(rMat)
+		tempRes := mpcEnv[0].BeaverMultMat(Vtr, Vtm, Lr, Lm)
+		_ = mpcEnv[0].BeaverReconstructMat(tempRes)
+		return timeFunc
+	}, " Matrix mult time: ")
 	mpcEnv[0].AssertSync()
 	networks.ResetNetworkLog()
 
-	//rMat = mpc_core.InitRMat(encryptedVectorSS.Type().Zero(), 16, 16)
 	// matrix inverse sqrt SVD
-	networks.ResetNetworkLog()
-	//benchmark(func() time.Duration {
 	timeBef = time.Now()
 	invRMat := mpcEnv[0].MatrixInverseSqrtSVD(rMat)
 	BT := mpcEnv[0].SSToCMat(cps, invRMat.Transpose())
 	if pid != 0 {
-		// scale back such that BTB ends up unscaled
 		BT = crypto.CMultConstMat(cps, BT, math.Sqrt((1*2)/math.Sqrt(float64(16))), false)
 		BT = crypto.CMatRescale(cps, BT)
 
@@ -292,15 +293,12 @@ func TestMicroBenchmark(t *testing.T) {
 	networks.PrintNetworkLog()
 	networks.ResetNetworkLog()
 	mpcEnv[0].AssertSync()
-	//return timeFunc
-	//}, " MatrixInverseSqrtSVD time: ")
-	mpcEnv[0].AssertSync()
 
 	// switch back to MHE
 	benchmark(func() time.Duration {
-		timeBef := time.Now()
+		timeBef = time.Now()
 		_ = mpcEnv[0].SStoCiphertext(cps, encryptedVectorSSInvSqrt)
-		timeFunc := time.Since(timeBef)
+		timeFunc = time.Since(timeBef)
 		mpcEnv[0].AssertSync()
 		return timeFunc
 	}, " Switch back to MHE time: ")
