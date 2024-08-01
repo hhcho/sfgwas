@@ -1870,7 +1870,7 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 		}()
 
 		var wg sync.WaitGroup
-		log.LLvl1("Block row", bi+1, "/", len(CachedB), "postprocessing accumulators")
+		log.LLvl1("postprocessing accumulators")
 		for thread := 0; thread < nproc; thread++ {
 			wg.Add(1)
 			go func(thread int) {
@@ -1880,7 +1880,7 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 
 				for l := range jobChannels[thread] {
 					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
-					log.LLvl1("Block row", bi+1, "/", len(CachedB), "giant", l, "modular reduction")
+					log.LLvl1(l, "modular reduction")
 					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
 						if l > 0 { // Giant step alignment
 							for j := range cv {
@@ -1897,7 +1897,7 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 
 		var aggGroup sync.WaitGroup
 		aggGroup.Add(1)
-		log.LLvl1("Block row", bi+1, "/", len(CachedB), "aggregating results")
+		log.LLvl1("aggregating results")
 		go func() {
 			defer aggGroup.Done()
 
