@@ -365,6 +365,31 @@ func ModularReduceV2(cryptoParams *crypto.CryptoParams, cva CipherVectorAccV2, o
 	return out
 }
 
+func ModularReduceV2WithEval(cryptoParams *crypto.CryptoParams, cva CipherVectorAccV2, outScale float64, eval ckks.Evaluator) crypto.CipherVector {
+	N := cryptoParams.Params.N()
+	ringQ, _ := ring.NewRing(N, cryptoParams.Params.Qi())
+	level := len(cva.val[0].acc0)
+
+	out := make(crypto.CipherVector, len(cva.val))
+	for i := range out {
+		ct := ckks.NewCiphertext(cryptoParams.Params, 1, level-1, outScale)
+		for l := 0; l < level; l++ {
+			mredParams := ringQ.MredParams[l]
+			qi := ringQ.Modulus[l]
+			ReduceAndAddUint128(cva.val[i].acc0[l], ct.Value()[0].Coeffs[l], mredParams, qi)
+			ReduceAndAddUint128(cva.val[i].acc1[l], ct.Value()[1].Coeffs[l], mredParams, qi)
+		}
+		//err := cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+		eval.Reduce(ct, ct)
+		//})
+		//if err != nil {
+		//	panic(err)
+		//}
+		out[i] = ct
+	}
+	return out
+}
+
 // Multiply X and Y to add to Acc without modular reduction
 func CPMultAccWithoutMRedV1(cryptoParams *crypto.CryptoParams, X crypto.CipherVector, Y crypto.PlainVector, Acc CipherVectorAccV1) {
 	for i := range X {
@@ -1879,19 +1904,20 @@ func CPMatMult4V2CachedBParallel(cryptoParams *crypto.CryptoParams, A crypto.Cip
 				//eva := ckks.NewEvaluator(cryptoParams.Params, ckks.EvaluationKey{Rlk: cryptoParams.Rlk, Rtks: cryptoParams.RotKs})
 
 				for l := range jobChannels[thread] {
-					cv := ModularReduceV2(cryptoParams, accCache[l], outScale)
-					log.LLvl1(l, "modular reduction")
 					cryptoParams.WithEvaluator(func(eval ckks.Evaluator) error {
+						cv := ModularReduceV2WithEval(cryptoParams, accCache[l], outScale, eval)
+						log.LLvl1(l, "modular reduction")
+
 						if l > 0 { // Giant step alignment
 							for j := range cv {
 								cv[j] = crypto.RotateRightWithEvaluator(cryptoParams, cv[j], -l*d, eval)
 							}
 						}
+						aggChannel <- cv
 						return nil
 					})
-
-					aggChannel <- cv
 				}
+
 			}(thread)
 		}
 
