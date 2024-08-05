@@ -15,7 +15,6 @@ import (
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/dckks"
 	"github.com/ldsec/lattigo/v2/ring"
-	"go.dedis.ch/onet/v3/log"
 )
 
 type Network struct {
@@ -156,9 +155,6 @@ func InitCommunication(bindingIP string, servers map[string]Server, pid, npartie
 }
 
 func InitializeParallelPRG(sharedKeysPath string, network []*Network, pid int, nparties int) {
-	if sharedKeysPath == "" {
-		log.LLvl1("Warning: shared_keys_path not set in config. Falling back on deterministic keys (not secure).")
-	}
 	randMaster := InitializePRG(pid, nparties, sharedKeysPath)
 	for i := range network {
 		network[i].Rand = &Random{}
@@ -290,26 +286,7 @@ func ReadFull(conn *net.Conn, buf []byte) {
 	}
 }
 
-func ReadFullWithErr(conn *net.Conn, buf []byte) error {
-	shift := 0
-	remaining := len(buf)
-	for {
-		received, err := (*conn).Read(buf[shift:])
-		if received == remaining {
-			break
-		} else if received < remaining {
-			shift += received
-			remaining -= received
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-//OpenChannel opens channel at specificed ip address and port and returns channel (server side, connection for client to listen to)
+// OpenChannel opens channel at specificed ip address and port and returns channel (server side, connection for client to listen to)
 func OpenChannel(ip, port string) (net.Conn, net.Listener) {
 	l, err := establishConn(ip, port)
 	checkError(err)
@@ -347,7 +324,7 @@ func listen(l net.Listener) (net.Conn, error) {
 	return c, nil
 }
 
-//CloseChannel closes connection
+// CloseChannel closes connection
 func CloseChannel(conn net.Conn) {
 	err := conn.Close()
 	checkError(err)
