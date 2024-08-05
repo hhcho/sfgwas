@@ -30,11 +30,6 @@ func sortInt(a, b int) (int, int) {
 }
 
 func InitializePRG(pid int, NumParties int, sharedKeysPath string) *Random {
-	/* TODO:
-	 * Currently samples shared secrets from
-	 * a deterministic stream. Need a key exchange
-	 * protocol in practice.
-	 */
 	prgTable := make(map[int]*frand.RNG)
 
 	if sharedKeysPath == "" {
