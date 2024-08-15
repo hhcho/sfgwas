@@ -854,30 +854,29 @@ func (ast *AssocTest) GetAssociationStats() (crypto.CipherVector, []bool) {
 				SaveMatrixToFile(cryptoParams, mpcObj, crypto.CipherMatrix{vary}, 1, -1, ast.general.CachePath("vary.txt"))             // syy - (sy*sy/n)
 			}
 		}
-
-		log.LLvl1(time.Now().Format(time.RFC3339), "AssertSync")
-		mpcObj.AssertSync()
-
-		stdinvx, stdinvy := ast.computeStdInv(varx, vary, nsnps, outFilter)
-		log.LLvl1(time.Now().Format(time.RFC3339), "Computed stdev")
-
-		if pid > 0 {
-			var stats crypto.CipherVector
-			if !covAllOnes {
-				stats = crypto.CMultScalar(cryptoParams, sx, sy[0]) // sx * sy / n
-				stats = crypto.CSub(cryptoParams, sxy, stats)       // sxy - (sx * sy / n)
-			} else {
-				stats = sxy
-			}
-			stats = crypto.CMult(cryptoParams, stats, stdinvx)       // stdinvx * (sxy - (sx * sy) / n)
-			stats = crypto.CMultScalar(cryptoParams, stats, stdinvy) // stdinvx * stdinvy * (sxy - (sx * sy) / n)
-
-			log.LLvl1(time.Now().Format(time.RFC3339), "All done!")
-
-			return stats, outFilter
-		}
 	}
 
+	log.LLvl1(time.Now().Format(time.RFC3339), "AssertSync")
+	mpcObj.AssertSync()
+
+	stdinvx, stdinvy := ast.computeStdInv(varx, vary, nsnps, outFilter)
+	log.LLvl1(time.Now().Format(time.RFC3339), "Computed stdev")
+
+	if pid > 0 {
+		var stats crypto.CipherVector
+		if !covAllOnes {
+			stats = crypto.CMultScalar(cryptoParams, sx, sy[0]) // sx * sy / n
+			stats = crypto.CSub(cryptoParams, sxy, stats)       // sxy - (sx * sy / n)
+		} else {
+			stats = sxy
+		}
+		stats = crypto.CMult(cryptoParams, stats, stdinvx)       // stdinvx * (sxy - (sx * sy) / n)
+		stats = crypto.CMultScalar(cryptoParams, stats, stdinvy) // stdinvx * stdinvy * (sxy - (sx * sy) / n)
+
+		log.LLvl1(time.Now().Format(time.RFC3339), "All done!")
+
+		return stats, outFilter
+	}
 	return nil, nil // party 0
 }
 
