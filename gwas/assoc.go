@@ -854,7 +854,9 @@ func (ast *AssocTest) GetAssociationStats() (crypto.CipherVector, []bool) {
 				SaveMatrixToFile(cryptoParams, mpcObj, crypto.CipherMatrix{vary}, 1, -1, ast.general.CachePath("vary.txt"))             // syy - (sy*sy/n)
 			}
 		}
+	}
 
+	if !ast.general.config.UseLogistic {
 		log.LLvl1(time.Now().Format(time.RFC3339), "AssertSync")
 		mpcObj.AssertSync()
 
