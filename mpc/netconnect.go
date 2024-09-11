@@ -147,12 +147,28 @@ func InitCommunication(bindingIP string, servers map[string]Server, pid, npartie
 
 	wg.Wait()
 
-	for i := range network {
-		network[i].Rand = InitializePRG(pid, nparties, sharedKeysPath)
-	}
+	// update threads initialize using different outputs of the same seed
+	InitializeParallelPRG(sharedKeysPath, network, pid, nparties)
 
 	return network
 
+}
+
+func InitializeParallelPRG(sharedKeysPath string, network []*Network, pid int, nparties int) {
+	randMaster := InitializePRG(pid, nparties, sharedKeysPath)
+	for i := range network {
+		network[i].Rand = &Random{}
+		network[i].Rand.prgTable = make(map[int]*frand.RNG)
+		for j := -1; j < nparties; j++ {
+			seed := make([]byte, chacha.KeySize)
+			randMaster.SwitchPRG(j)
+			randMaster.RandRead(seed)
+			randMaster.RestorePRG()
+			network[i].Rand.prgTable[j] = frand.NewCustom(seed, bufferSize, 20)
+		}
+		network[i].Rand.curPRG = network[i].Rand.prgTable[pid]
+		network[i].Rand.pid = pid
+	}
 }
 
 func initNetworkForThread(bindingIP string, servers map[string]Server, pid int, nparties, thread int) *Network {
@@ -270,7 +286,7 @@ func ReadFull(conn *net.Conn, buf []byte) {
 	}
 }
 
-//OpenChannel opens channel at specificed ip address and port and returns channel (server side, connection for client to listen to)
+// OpenChannel opens channel at specificed ip address and port and returns channel (server side, connection for client to listen to)
 func OpenChannel(ip, port string) (net.Conn, net.Listener) {
 	l, err := establishConn(ip, port)
 	checkError(err)
@@ -308,7 +324,7 @@ func listen(l net.Listener) (net.Conn, error) {
 	return c, nil
 }
 
-//CloseChannel closes connection
+// CloseChannel closes connection
 func CloseChannel(conn net.Conn) {
 	err := conn.Close()
 	checkError(err)
