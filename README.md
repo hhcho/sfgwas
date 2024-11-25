@@ -4,7 +4,7 @@ Software for secure and federated genome-wide association studies, as described 
 
 **Secure and Federated Genome-Wide Association Studies for Biobank-Scale Datasets**\
 Hyunghoon Cho, David Froelicher, Jeffrey Chen, Manaswitha Edupalli, Apostolos Pyrgelis, Juan R. Troncoso-Pastoriza, Jean-Pierre Hubaux, Bonnie Berger\
-Under review, 2024
+Nature Genetics, 2024
 
 This repository provides the code for PCA-based association analysis. For LMM-based GWAS, see [here](https://github.com/hhcho/sfgwas-lmm). 
 
@@ -112,7 +112,9 @@ We also provide `stop.sh` for terminating the jobs launched by `run_example.sh`.
 
 Once SF-GWAS finishes, it generates `assoc.txt` in the output directory specified in the configuration. This file includes the Pearson correlation coefficient for each variant passing the quality control filters. Binary vector indicating the inclusion of each variant in the final output is specified in `gkeep.txt` in the cache directory.
 
+We have included a Python script `scripts/plotResults.py` to create a Manhattan plot as provided in our manuscript. 
+
 ## Contact for questions
 
-David Froelicher, dfroelic@mit.edu;
+David Froelicher, froelich377@gmail.com;
 Hoon Cho, hoon.cho@yale.edu
