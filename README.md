@@ -1,4 +1,4 @@
-# SF-GWAS
+# SF-GWAS [![DOI](https://zenodo.org/badge/528582242.svg)](https://doi.org/10.5281/zenodo.14219065)
 
 Software for secure and federated genome-wide association studies, as described in:
 
