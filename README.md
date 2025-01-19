@@ -8,56 +8,6 @@ Nature Genetics, 2025
 
 This repository provides the code for PCA-based association analysis and includes data preprocessing, analysis, and plotting scripts to reproduce main results of the manuscript. For LMM-based workflow, see [here](https://github.com/hhcho/sfgwas-lmm). 
 
-## Data preparation
-
-### Input data format
-
-For demonstration, we provide an example synthetic dataset in `example_data/`, generated using the [genotype data simulation routine](https://zzz.bwh.harvard.edu/plink/simulate.shtml) in PLINK1.9
-and converted to the PLINK2 PGEN format.
-The example data is split between two parties. Each party's local data is stored in
-`party1` and `party2` directories. Note that SF-GWAS can be run with more than two parties.
-
-Main input data files include:
-- `geno/chr[1-22].[pgen|psam|pvar]`: [PGEN files](https://www.cog-genomics.org/plink/2.0/input#pgen) for each chromosome. 
-- `pheno.txt`: each line includes the phenotype under study for each sample in the `.psam` file.
-- `cov.txt`: each line includes a tab-separated list of covariates for each sample in the `.psam` file.
-- `sample_keep.txt`: a list of sample IDs from the `.psam` file to include in the analysis; to be used with the `--keep` flag in PLINK2 (see [here](https://www.cog-genomics.org/plink/2.0/filter#sample) for file specification).
-
-### Preparing the input data
-
-We require the input dataset to be provided in the PGEN file format. PLINK2 can be used to convert other file formats (e.g., VCF and BGEN) to PGEN. For instance, the BGEN files from UK Biobank can be converted using:
-
-```plink2 --bgen ukb_chr22_v3.bgen ref-first --sample ukb12345.sample --make-pgen --out chr22```
-
-The other three files&mdash;`pheno.txt`, `cov.txt`, and `sample_keep.txt`&mdash;can be prepared as follows.
-
-
-
-### Preprocessing scripts for additional input files
-
-We provide two preprocessing scripts in `scripts/` for producing additional input files needed for SF-GWAS. 
-
-1. `createSnpInfoFiles.py` processes the provided `.pvar` files to create a number of files specifying variant information. It can be run as follows:
-
-`python3 createSnpInfoFiles.py PGEN_PREFIX OUTPUT_DIR`
-
-Note that `PGEN_PREFIX` is expected to be a format string including `%d` in place of the chromosome number (e.g., `geno/chr%d` for the example dataset), which the script sequentially replaces with the chromosome numbers 1-22. 
-
-This command generates the following three files in `OUTPUT_DIR`:
-- `chrom_sizes.txt`: the number of SNPs for each chromosome
-- `snp_ids.txt`: a list of variant IDs
-- `snp_pos.txt`: a tab-separated, two-column matrix specifying the genomic position of each variant (chromosome number followed by base position)
-
-2. `computeGenoCounts.py` runs PLINK2's [genotype counting routine](https://www.cog-genomics.org/plink/2.0/basic_stats#geno_counts) (`--geno-counts`) on each chromosome to obtain genotype, allele, and missingness counts for each variant. It is run as follows:
-
-`python3 computeGenoCounts.py PGEN_PREFIX SAMPLE_KEEP OUTPUT_DIR`
-
-`PGEN_PREFIX` is the same as before. `SAMPLE_KEEP` points to the `sample_keep.txt` described above as a main input file, including a list of sample IDs to be included in the analysis in a PLINK2-recognized format.
-
-This script generates `all.gcount.transpose.bin` in `OUTPUT_DIR`, which needs to be provided to SF-GWAS. It is a binary file encoding a 6-by-m matrix of precomputed allele, genotype, and missingness counts for all m variants in the dataset. 
-
-We provide both variant information files and the genotype counts for the example dataset in `example_data/`.
-
 ## Installation instructions
 
 ### Dependencies
@@ -105,6 +55,47 @@ replace github.com/hhcho/mpc-core => ../mpc-core
 If `go build` produces an error, run any commands suggested by Go and try again. If the build
 finishes without any output, the package has been successfully configured.
 
+## Data preparation
+
+### Input data format
+
+For demonstration, we provide an example synthetic dataset in `example_data/`, generated using the [genotype data simulation routine](https://zzz.bwh.harvard.edu/plink/simulate.shtml) in PLINK1.9
+and converted to the PLINK2 PGEN format.
+The example data is split between two parties. Each party's local data is stored in
+`party1` and `party2` directories. Note that SF-GWAS can be run with more than two parties.
+
+Main input data files include:
+- `geno/chr[1-22].[pgen|psam|pvar]`: [PGEN files](https://www.cog-genomics.org/plink/2.0/input#pgen) for each chromosome. 
+- `pheno.txt`: each line includes the phenotype under study for each sample in the `.psam` file.
+- `cov.txt`: each line includes a tab-separated list of covariates for each sample in the `.psam` file.
+- `sample_keep.txt`: a list of sample IDs from the `.psam` file to include in the analysis; to be used with the `--keep` flag in PLINK2 (see [here](https://www.cog-genomics.org/plink/2.0/filter#sample) for file specification).
+
+### Data preprocessing scripts
+
+We provide two preprocessing scripts in `scripts/preprocessing` for producing additional input files needed for SF-GWAS. 
+
+1. `createSnpInfoFiles.py` processes the provided `.pvar` files to create a number of files specifying variant information. It can be run as follows:
+
+`python3 createSnpInfoFiles.py PGEN_PREFIX OUTPUT_DIR`
+
+Note that `PGEN_PREFIX` is expected to be a format string including `%d` in place of the chromosome number (e.g., `geno/chr%d` for the example dataset), which the script sequentially replaces with the chromosome numbers 1-22. 
+
+This command generates the following three files in `OUTPUT_DIR`:
+- `chrom_sizes.txt`: the number of SNPs for each chromosome
+- `snp_ids.txt`: a list of variant IDs
+- `snp_pos.txt`: a tab-separated, two-column matrix specifying the genomic position of each variant (chromosome number followed by base position)
+
+2. `computeGenoCounts.py` runs PLINK2's [genotype counting routine](https://www.cog-genomics.org/plink/2.0/basic_stats#geno_counts) (`--geno-counts`) on each chromosome to obtain genotype, allele, and missingness counts for each variant. It is run as follows:
+
+`python3 computeGenoCounts.py PGEN_PREFIX SAMPLE_KEEP OUTPUT_DIR`
+
+`PGEN_PREFIX` is the same as before. `SAMPLE_KEEP` points to the `sample_keep.txt` described above as a main input file, including a list of sample IDs to be included in the analysis in a PLINK2-recognized format.
+
+This script generates `all.gcount.transpose.bin` in `OUTPUT_DIR`, which needs to be provided to SF-GWAS. It is a binary file encoding a 6-by-m matrix of precomputed allele, genotype, and missingness counts for all m variants in the dataset. 
+
+We provide both variant information files and the genotype counts for the example dataset in `example_data/`.
+
+
 ## How to use SF-GWAS for joint analysis
 
 ### Setting the configuration
@@ -126,7 +117,11 @@ Once SF-GWAS finishes, it generates `assoc.txt` in the output directory specifie
 
 ## Plotting the results
 
-We included a Python script `scripts/plotResults.py` to create a Manhattan plot as provided in our manuscript. 
+We included a Python script `scripts/visualization/manhattanPlot.py` to create a Manhattan plot as provided in our manuscript. 
+
+## Plaintext data analysis
+
+Please see additional scripts in `scripts/analysis/` for performing GWAS using PLINK2 for comparison. `run_gwas_ukb.sh` and `run_gwas_emerge.sh` include the workflows used for UK Biobank and eMERGE data analysis as reported in our manuscript.
 
 ## Contact for questions
 
