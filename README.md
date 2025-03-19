@@ -6,7 +6,7 @@ Software for secure and federated genome-wide association studies, as described 
 Hyunghoon Cho, David Froelicher, Jeffrey Chen, Manaswitha Edupalli, Apostolos Pyrgelis, Juan R. Troncoso-Pastoriza, Jean-Pierre Hubaux, Bonnie Berger\
 Nature Genetics, 2025
 
-This repository provides the code for PCA-based association analysis and includes data preprocessing, analysis, and plotting scripts to reproduce main results of the manuscript. For LMM-based workflow, see [here](https://github.com/hhcho/sfgwas-lmm). 
+This repository provides the code for PCA-based association analysis and includes data preprocessing, analysis, and plotting scripts to reproduce main results of the manuscript. For LMM-based workflow, see [here](https://github.com/hcholab/sfgwas-lmm). 
 
 ## Installation instructions
 
